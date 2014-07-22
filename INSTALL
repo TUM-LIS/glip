@@ -1,0 +1,17 @@
+GLIP Installation
+=================
+
+libglip uses GNU autotools, the build and installation process 
+is straightforward.
+
+Run the following commands inside the top-level source directory to 
+build GLIP with the cypressfx2 and tcp backends and install it 
+to /opt/glip. See the documentation of the individual backends for
+configure options and third-party library dependencies.
+
+$> ./autogen.sh
+$> mkdir build; cd build
+$> ../configure --prefix=/opt/glip --enable-cypressfx2 --enable-tcp
+$> make
+$> make install
+
