@@ -556,7 +556,7 @@ int glip_logic_reset(struct glip_ctx *ctx)
  * @param[in]  ctx        the library context
  * @param[in]  channel    the channel to read from
  * @param[in]  size       the number of bytes to read
- * @param[out] data       the data read from the target
+ * @param[out] data       the data read from the target (allocated by the user)
  * @param[out] size_read  the number of bytes actually read from the target.
  *                        Only those bytes may be considered valid inside
  *                        @p data!
@@ -590,7 +590,7 @@ int glip_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @param[in]  ctx        the library context
  * @param[in]  channel    the channel to read from
  * @param[in]  size       the number of bytes to read
- * @param[out] data       the data read from the target
+ * @param[out] data       the data read from the target (allocated by the user)
  * @param[out] size_read  the number of bytes actually read from the target.
  *                        Only those bytes may be considered valid inside
  *                        @p data!
@@ -601,6 +601,9 @@ int glip_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @return -ETIMEDOUT if the call timed out (some data might still have been
  *         read, see @p size_read)
  * @return any other value indicates an error
+ *
+ * Note: You need to allocate sufficient space to read @p size bytes into
+ * @p data before calling this function.
  *
  * @see glip_read()
  *

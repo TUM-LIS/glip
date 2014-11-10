@@ -63,8 +63,10 @@ libglip API functions and the transfer backend are fully asynchronous with no
 locking in between.
 
 While this approach results in great throughput performance, the transfer
-latency can be reduced. A new USB transfer started if either a number of blocks
-of data are available or if a timeout expires. This timeout has been set to 5
-milliseconds (see `USB_TRANSFER_RETRY_TIMEOUT_MS` in backend_cypressfx2.c), i.e.
-when writing only a small amount of data to the target it takes 5 ms until the
-data is transferred.
+latency can be reduced. A new USB transfer is started if either a sufficient
+amount of data is available (`USB_BUF_SIZE / 2 = 16 kByte`) or if a timeout
+expires. This timeout has been set to 5 milliseconds (see
+`USB_TRANSFER_RETRY_TIMEOUT_MS` in backend_cypressfx2.c), i.e. when writing
+only a small amount of data to the target GLIP waits for 5 ms until the data
+is sent off to the device. If you need a latency below this threshold, you can
+lower the timeout value.
