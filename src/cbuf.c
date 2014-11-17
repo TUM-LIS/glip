@@ -34,6 +34,98 @@
 /**
  * @defgroup development-cbuf Circular Buffer
  * @ingroup development
+ *
+ * Inside GLIP it is often necessary to buffer incoming or outgoing data between
+ * the read/write API and a communication thread. This functionality is usually
+ * accomplished by a circular buffer, a.k.a. ring buffer or FIFO, and
+ * implemented in this class.
+ *
+ * cbuf supports two methods for reading and writing data, which can be freely
+ * intermixed: a basic mode and an API mode.
+ *
+ * @section basic_mode Basic Mode
+ * The basic mode is exactly what you would expect from a buffer implementation:
+ * cbuf_read() reads data from the buffer, and cbuf_write() allows you to write
+ * data to the buffer.
+ *
+ * @section api_mode API Mode
+ * In addition to the basic mode, cbuf is optimized to be used together with
+ * 3rd-party APIs. Those APIs exhibit a common pattern:
+ *
+ * - To read from a device, you pass a pointer to a pre-allocated memory area
+ *   together with the size of this memory area. Then you call the read function
+ *   of the API, which writes the data to the memory area you gave and returns
+ *   the number of actually written bytes.
+ *
+ * - To write to a device, you pass a pointer to the data you want to write,
+ *   together with the number of bytes you want to write. Then you call the
+ *   API function and it returns the number of bytes that have been actually
+ *   written.
+ *
+ * Using such an API together with the basic read/write functions requires you
+ * to use temporary buffers, which obviously has a memory overhead and (more
+ * importantly) requires data to be needlessly copied around, reducing
+ * performance. But don't despair, cbuf's API Mode got you covered!
+ *
+ * Now, when reading from the device and thus writing into the circular buffer,
+ * you do the following:
+ *
+ * - Call cbuf_reserve() to get a pointer to an allocated buffer with enough
+ *   room for a defined number of bytes.
+ *
+ * - Call the appropriate function from your API to read from the device, and
+ *   pass it the pointer you got from cbuf_reserve() together with the size
+ *   of buffer space you reserved.
+ *
+ * - When the read function from the device returns with the number of bytes it
+ *   actually read, call cbuf_commit() to commit the data to the buffer.
+ *
+ * Reading from the circular buffer works the same way by using the cbuf_peek()
+ * and cbuf_discard() functions.
+ *
+ * Note that you will get always a continuous block of memory when calling
+ * cbuf_reserve() or cbuf_peek(), as long as the buffer fill level allows for
+ * it.
+ *
+ * The implementation of cbuf tries to avoid copying data whenever possible
+ * (which is actually most of the time). Internally, though, the circular
+ * buffer is implemented as block of memory with begin and end pointers. This
+ * creates cases where a single write to the buffer causes actually two writes,
+ * one to the end of the buffer space, and on to the beginning. In this case
+ * a temporary buffer is handed out by cbuf_reserve() and this buffer is later
+ * on copied to the appropriate destinations (when calling cbuf_commit()).
+ * The same logic applies to the read operation appropriately.
+ *
+ * Implementations exist which in all cases avoid copying data, usually with the
+ * trade-off of not being able to use the whole buffer space in all cases,
+ * i.e. you cannot always fill the circular buffer up to 100 percent. One such
+ * implementation is the
+ * <a href="http://www.codeproject.com/Articles/3479/The-Bip-Buffer-The-Circular-Buffer-with-a-Twist">Bip Buffer</a>
+ * by Simon Cooke.
+ *
+ * \section thread_safety Thread Safety
+ * A circular buffer has two "sides": a read side and a write side. In many
+ * cases reading happens from a different thread than writing. This use case
+ * is fully supported by cbuf, and read and write side are properly synchronized
+ * by appropriate locking mechanisms. Note, however, that cbuf is not fully
+ * thread safe. You cannot, for example, write to the buffer from two different
+ * threads without implementing appropriate locking mechanisms yourself.
+ * This keeps the synchronization overhead minimal while allowing for the most
+ * common use case.
+ *
+ * - Functions of the read side: cbuf_read(), cbuf_peek(), cbuf_discard()
+ * - Functions of the write side: cbuf_write(), cbuf_reserve(), cbuf_commit()
+ *
+ * @section utility Utility Functionality
+ * cbuf contains, in addition to the read/write API, a number of useful
+ * utility functions.
+ *
+ * - Information about the fill level: cbuf_free_level(), cbuf_fill_level(),
+ *   cbuf_is_empty(), and cbuf_is_full()
+ * - Blocking waiting until the fill level changes:
+ *   cbuf_wait_for_level_change() and cbuf_timedwait_for_level_change()
+ * - Optimizations: cbuf_set_hint_max_read_size() and
+ *   cbuf_set_hint_max_write_size()
  * @{
  */
 
@@ -204,9 +296,8 @@ int cbuf_write(struct cbuf *buf, const uint8_t *data, size_t size)
  * to be committed by calling cbuf_commit(). You may commit less bytes than you
  * reserved (or even nothing at all).
  *
- * You need to check if enough free spaces are available by calling
- * cbuf_free_level() beforehand, otherwise this function will fail with a
- * -ENOMEM return value.
+ * You need to check if enough space is available by calling cbuf_free_level()
+ * beforehand, otherwise this function will fail with a -ENOMEM return value.
  *
  * The main use case for this API are other APIs: many libraries provide
  * functions which can be passed a pointer to a preallocated chunk of memory
@@ -353,8 +444,10 @@ int cbuf_read(struct cbuf *buf, uint8_t *data, size_t size)
         /* we can do a continuous read */
         memcpy(data, &buf->data[buf->rd_ptr & (buf->size - 1)], size);
     } else {
-        /* we have a split read from the end and the beginning of the array */
-        /* from rd_ptr to end of array */
+        /*
+         * we have a split read from the end and the beginning of the array
+         * from rd_ptr to end of array
+         */
         int size_to_end = buf->size - (buf->rd_ptr & (buf->size - 1));
         memcpy(data, &buf->data[buf->rd_ptr & (buf->size - 1)], size_to_end);
         /* from the beginning of the array until we have enough */
@@ -411,8 +504,10 @@ int cbuf_peek(struct cbuf *buf, uint8_t **data, size_t size)
         return 0;
     }
 
-    /* otherwise, we need to copy the two data segments into a continuous buffer */
-    /* first, allocate a sufficiently large temporary buffer if necessary */
+    /*
+     * otherwise, we need to copy the two data segments into a continuous buffer
+     * first, allocate a sufficiently large temporary buffer if necessary
+     */
     if (buf->read_data_tmp_size < size) {
         if (size <= buf->hint_max_read_size) {
             /* we can use the hint for the temporary buffer size */
