@@ -341,11 +341,12 @@ int cbuf_reserve(struct cbuf *buf, uint8_t **data, size_t size)
                  * requested in |size|, rounded up to the next power of two, up
                  * to |buf->size|
                  */
-                int bsr = 0;
-                while (size >>= 1) {
-                    bsr++;
+                int log2_size = 0;
+                size_t size_tmp = size;
+                while (size_tmp >>= 1) {
+                    log2_size++;
                 }
-                size_t new_write_data_tmp_size = (1 << (bsr + 1));
+                size_t new_write_data_tmp_size = (1 << (log2_size + 1));
                 if (new_write_data_tmp_size > buf->size) {
                     buf->write_data_tmp_size = buf->size;
                 } else {
