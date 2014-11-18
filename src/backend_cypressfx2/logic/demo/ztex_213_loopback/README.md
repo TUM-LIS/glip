@@ -35,13 +35,11 @@ using ISE alone should be possible as well but are not shown here.
 * In a console, type
 
       $> cd GLIP_DIR/src/backend_cypressfx2/logic/demo/ztex_213_loopback
-      $> vivado
+      $> vivado -source loopback_vivado.tcl
 
   You need to replace `GLIP_DIR` with the directory containing your GLIP
   checkout.
 
-* Click on `Tools` -> `Run Tcl script` and select `loopback_vivado.tcl`, or run
-  `source loopback_vivado.tcl` in Tcl Console
 * Click on `Generate Bitstream`. Answer `Yes` when asked to run other steps
   before the bitstream generation.
 * The bitstream is located at
