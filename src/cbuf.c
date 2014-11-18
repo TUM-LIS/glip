@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /**
  * @defgroup development-cbuf Circular Buffer
@@ -643,6 +644,64 @@ size_t cbuf_fill_level(struct cbuf *buf)
 size_t cbuf_free_level(struct cbuf *buf)
 {
     return buf->size - cbuf_fill_level(buf);
+}
+
+/**
+ * Wait until the buffer fill level changes
+ *
+ * @param buf the buffer
+ * @return 0 on success
+ * @return any other value indicates an error
+ *
+ * @see cbuf_timedwait_for_level_change()
+ */
+int cbuf_wait_for_level_change(struct cbuf *buf)
+{
+    int rv = 0;
+
+    rv = pthread_mutex_lock(&buf->level_mutex);
+    if (rv != 0) {
+        goto unlock_return;
+    }
+
+    rv = pthread_cond_wait(&buf->level_changed, &buf->level_mutex);
+
+unlock_return:
+    pthread_mutex_unlock(&buf->level_mutex);
+    return -rv;
+}
+
+/**
+ * Wait until the buffer fill level changes with a timeout
+ *
+ * The timeout expires when the absolute time in @p abs_timeout passes, or
+ * if the absolute time specified in @p abs_timeout has already passed. This
+ * behavior is identical to the timed pthread functions
+ * (pthread_mutex_timedlock(), etc.).
+ *
+ * @param buf the buffer
+ * @param abs_timeout if this absolute time passes, the timeout expires
+ * @return 0 on success
+ * @return any other value indicates an error
+ *
+ * @see cbuf_wait_for_level_change()
+ */
+int cbuf_timedwait_for_level_change(struct cbuf *buf,
+                                    const struct timespec *abs_timeout)
+{
+    int rv = 0;
+
+    rv = pthread_mutex_timedlock(&buf->level_mutex, abs_timeout);
+    if (rv != 0) {
+        goto unlock_return;
+    }
+
+    rv = pthread_cond_timedwait(&buf->level_changed, &buf->level_mutex,
+                                abs_timeout);
+
+unlock_return:
+    pthread_mutex_unlock(&buf->level_mutex);
+    return -rv;
 }
 
 /**@}*/ /* end of doxygen group development-cbuf */

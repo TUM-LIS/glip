@@ -36,7 +36,7 @@
  */
 
 /**
- * The circular buffer structure
+ * Circular buffer context structure
  */
 struct cbuf {
     /** mutex protecting the fill/free level */
@@ -82,6 +82,10 @@ size_t cbuf_free_level(struct cbuf *buf);
 
 int cbuf_set_hint_max_read_size(struct cbuf *buf, size_t hint_max_read_size);
 int cbuf_set_hint_max_write_size(struct cbuf *buf, size_t hint_max_write_size);
+
+int cbuf_wait_for_level_change(struct cbuf *buf);
+int cbuf_timedwait_for_level_change(struct cbuf *buf,
+                                    const struct timespec *abs_timeout);
 
 #endif /* CBUF_H_ */
 

@@ -662,8 +662,6 @@ int gb_cypressfx2_logic_reset(struct glip_ctx *ctx)
     return 0;
 }
 
-
-
 /**
  * Read from the target device
  *
@@ -679,8 +677,8 @@ int gb_cypressfx2_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-    unsigned int fill_level = cbuf_fill_level(&bctx->read_buf);
-    unsigned int size_read_req = (size > fill_level ? fill_level : size);
+    size_t fill_level = cbuf_fill_level(&bctx->read_buf);
+    size_t size_read_req = (size > fill_level ? fill_level : size);
 
     int rv = cbuf_read(&bctx->read_buf, data, size_read_req);
     if (rv < 0) {
@@ -715,7 +713,6 @@ int gb_cypressfx2_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 {
     int rv;
     struct glip_backend_ctx *bctx = ctx->backend_ctx;
-    struct timespec ts;
 
     if (size > USB_BUF_SIZE) {
         /*
@@ -727,48 +724,31 @@ int gb_cypressfx2_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         return -1;
     }
 
+    /*
+     * Wait until sufficient data is available to be read.
+     */
+    struct timespec ts;
     if (timeout != 0) {
         clock_gettime(CLOCK_REALTIME, &ts);
         timespec_add_ns(&ts, timeout * 1000 * 1000);
     }
-
-    *size_read = 0;
-
-    if (timeout != 0) {
-        rv = pthread_mutex_timedlock(&bctx->read_buf.level_mutex, &ts);
-    } else {
-        rv = pthread_mutex_lock(&bctx->read_buf.level_mutex);
-    }
-    if (rv != 0) {
-        if (rv == ETIMEDOUT) {
-            return -ETIMEDOUT;
-        } else {
-            return -1;
-        }
-    }
-
-    /*
-     * Wait until sufficient data is available to be read.
-     */
     while (cbuf_fill_level(&bctx->read_buf) < size) {
-        if (timeout != 0) {
-            rv = pthread_cond_timedwait(&bctx->read_buf.level_changed,
-                                        &bctx->read_buf.level_mutex, &ts);
+        if (timeout == 0) {
+            rv = cbuf_wait_for_level_change(&bctx->read_buf);
         } else {
-            rv = pthread_cond_wait(&bctx->read_buf.level_changed,
-                                   &bctx->read_buf.level_mutex);
+            rv = cbuf_timedwait_for_level_change(&bctx->read_buf, &ts);
         }
+
         if (rv != 0) {
             break;
         }
     }
 
-    pthread_mutex_unlock(&bctx->read_buf.level_mutex);
-
     /*
      * We read whatever data is available, and assume a timeout if the available
      * amount of data does not match the requested amount.
      */
+    *size_read = 0;
     rv = gb_cypressfx2_read(ctx, channel, size, data, size_read);
     if (rv == 0 && size != *size_read) {
         return -ETIMEDOUT;
@@ -842,7 +822,6 @@ int gb_cypressfx2_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
                           uint8_t *data, size_t *size_written,
                           unsigned int timeout)
 {
-    int rv;
     struct glip_backend_ctx *bctx = ctx->backend_ctx;
 
     struct timespec ts;
@@ -860,34 +839,18 @@ int gb_cypressfx2_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
                             &size_done_tmp);
         size_done += size_done_tmp;
 
-        if (timeout != 0) {
-            rv = pthread_mutex_timedlock(&bctx->write_buf.level_mutex, &ts);
-        } else {
-            rv = pthread_mutex_lock(&bctx->write_buf.level_mutex);
-        }
-        if (rv != 0) {
+        if (size_done == size) {
             break;
         }
 
-        if (cbuf_free_level(&bctx->write_buf) == 0 && size_done < size) {
-            if (timeout != 0) {
-                rv = pthread_cond_timedwait(&bctx->write_buf.level_changed,
-                                            &bctx->write_buf.level_mutex, &ts);
+        if (cbuf_free_level(&bctx->write_buf) == 0) {
+            if (timeout == 0) {
+                cbuf_wait_for_level_change(&bctx->write_buf);
             } else {
-                rv = pthread_cond_wait(&bctx->write_buf.level_changed,
-                                       &bctx->write_buf.level_mutex);
+                cbuf_timedwait_for_level_change(&bctx->write_buf, &ts);
             }
-            if (rv != 0) {
-                /* we probably have hit the timeout */
-                break;
-            }
-        } else if (size_done == size) {
-            /* done, everything has been written */
-            break;
         }
-        pthread_mutex_unlock(&bctx->write_buf.level_mutex);
     }
-    pthread_mutex_unlock(&bctx->write_buf.level_mutex);
 
     *size_written = size_done;
 
