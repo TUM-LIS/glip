@@ -65,8 +65,3 @@ it, close the connection when you're done and free all allocated resources.
   nothing (setters) or the requested value (setters).
 
 \include glip-simple.c
-
-\if internal
-\section develop-glip Extending the Library
-asdfasdf
-\endif

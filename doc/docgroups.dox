@@ -1,5 +1,5 @@
 /**
-\defgroup library-init-deinit Library Initialization/Deinitialization
+@defgroup library-init-deinit Library Initialization/Deinitialization
 Before using any of the library's functionality, it's necessary to initialize
 it. After using it, you need to free all claimed resources again.
 
@@ -13,7 +13,7 @@ GLIP function calls, and is similar to a <code>this</code> pointer in C++.
 After you're done using GLIP, free all resources by calling glip_free().
 
 
-\defgroup connection-handling Connection Handling
+@defgroup connection-handling Connection Handling
 Before communicating with a device, you need to connect to it; and after you're
 done, you need to disconnect. This functionality is provided by the two
 functions glip_open() and glip_close().
@@ -25,7 +25,7 @@ the USB device, etc. All those settings are done through options that you
 passed when calling glip_new(). Refer to the documentation of the backend for
 information on the required and optional options.
 
-\defgroup communication Communication
+@defgroup communication Communication
 
 The main purpose of GLIP is to communicate with a target device. Two main
 categories of communication exist: control and data communication.
@@ -75,12 +75,12 @@ after an specified amount of time, even if not all data has been transferred
 yet.
 
 
-\defgroup utilities Utility Functionality
+@defgroup utilities Utility Functionality
 Some functionality of GLIP cannot be put into a real category, so this
 "Utility" group contains a mixed bag of useful library functions.
 
 
-\defgroup log Logging
+@defgroup log Logging
 GLIP emits log messages in many cases to help to find problems both during
 development as well during usage. A configurable logging mechanism allows you
 to redirect, filter and/or discard the messages based on your application's
@@ -128,11 +128,11 @@ First, create a function matching the glip_log_fn() signature. Then, tell GLIP
 to use this function as destination for all log messages by registering it with
 glip_set_log_fn().
 
-\note It is not possible to redirect messages created by glip_new() to your
+@note It is not possible to redirect messages created by glip_new() to your
   own logging function; those messages will always be handled by the default
   log message handler.
 
-\defgroup backend Backends
+@defgroup backend Backends
 GLIP attempts to provide a common API for the different ways of talking to a
 target device. This leads to a library structure with a thin common API layer
 and backends which implement most of the communication functionality.
@@ -150,11 +150,4 @@ Those options are passed as key/value pairs when calling glip_new().
 Backends can be enabled and disabled at compile time, as library user you cannot
 rely on a backend to be always present. You can use glip_get_backends() to get
 a list of all supported backends by the installed library version.
-
-\defgroup development Extending GLIP
-GLIP is written in a way to make it easily extensible. Writing a new
-communication backend should be rather easy if you use one of the existing
-backends as example. GLIP also contains some helper functionality, such as a
-optimized \ref development-cbuf "circular buffer implementation" , which can be reused in your code.
-
 */
