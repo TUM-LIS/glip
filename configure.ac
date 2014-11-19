@@ -107,7 +107,7 @@ AM_CONDITIONAL([BACKEND_TCP], [test "x$enable_tcp" = "xyes"])
 
 GLIP_CONFIG_BACKEND(tcp, TCP)
 
-
+dnl ----- COMPILER AND LINKER DEFAULT FLAGS -----
 AM_CFLAGS="-Wall \
     -Wmissing-declarations -Wmissing-prototypes \
     -Wnested-externs -Wpointer-arith \
@@ -126,6 +126,19 @@ AM_LDFLAGS="-Wl,--gc-sections \
             -lrt"
 AC_SUBST(AM_LDFLAGS)
 
+
+dnl ----- DOCUMENTATION -----
+DX_HTML_FEATURE(ON)
+DX_CHM_FEATURE(OFF)
+DX_CHI_FEATURE(OFF)
+DX_MAN_FEATURE(OFF)
+DX_RTF_FEATURE(OFF)
+DX_XML_FEATURE(OFF)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN(glip, doc/doxygen.cfg, apidoc)
+
+
 dnl ---------------------
 
 AC_CONFIG_HEADERS(config.h)
@@ -134,8 +147,6 @@ AC_CONFIG_FILES([
     Makefile
     src/Makefile
     src/tools/Makefile
-    doc/Makefile
-    doc/doxygen.cfg
 ])
 
 AC_OUTPUT

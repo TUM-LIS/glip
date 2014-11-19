@@ -27,7 +27,7 @@ CLEANFILES =
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AM_MAKEFLAGS = --no-print-directory
 
-SUBDIRS = src doc
+SUBDIRS = src
 
 # prepare pkg-config file
 SED_PROCESS = \
@@ -42,7 +42,13 @@ SED_PROCESS = \
 %.pc: %.pc.in Makefile
 	$(SED_PROCESS)
 
+# build documentation with doxygen
+include doxygen.am
+
+doc: doxygen-doc
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libglip.pc
-EXTRA_DIST += libglip.pc.in
+EXTRA_DIST += libglip.pc.in $(DX_CONFIG)
 CLEANFILES += libglip.pc
+MOSTLYCLEANFILES = $(DX_CLEANFILES)
