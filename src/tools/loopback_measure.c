@@ -65,6 +65,8 @@ void display_help(void)
            "-o|--backend-options\n"
            "  options passed to the backend. Options are key=value pairs \n"
            "  separated by a comma.\n"
+           "-n|--nonblock\n"
+           "  use the non-blocking read/write functions of GLIP\n"
            "-h|--help\n"
            "  print this help message\n"
            "-v|--version\n"
@@ -103,6 +105,7 @@ size_t current_sent;
 size_t current_received;
 pthread_mutex_t done_mutex;
 pthread_cond_t  done;
+int use_blocking_functions;
 
 pthread_t read_thread;
 pthread_attr_t read_thread_attr;
@@ -119,18 +122,20 @@ int main(int argc, char *argv[])
     char *backend_optionstring;
     struct glip_option* backend_options;
     size_t num_backend_options = 0;
+    use_blocking_functions = 1;
 
     while (1) {
         static struct option long_options[] = {
             {"help",            no_argument,       0, 'h'},
             {"version",         no_argument,       0, 'v'},
+            {"nonblock",        no_argument,       0, 'n'},
             {"backend",         required_argument, 0, 'b'},
             {"backend-options", required_argument, 0, 'o'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "is:vhb:o:", long_options, &option_index);
+        c = getopt_long(argc, argv, "is:vnhb:o:", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -150,6 +155,9 @@ int main(int argc, char *argv[])
             backend_optionstring = optarg;
             parse_options(backend_optionstring, &backend_options,
                           &num_backend_options);
+            break;
+        case 'n':
+            use_blocking_functions = 0;
             break;
         case 'v':
             display_version();
@@ -212,7 +220,12 @@ int main(int argc, char *argv[])
     }
     while (current_sent < TRANSFER_SIZE_BYTES) {
         size_t size_written;
-        glip_write_b(ctx, 0, WRITE_BLOCK_SIZE, data, &size_written, 0);
+        if (use_blocking_functions) {
+            glip_write_b(ctx, 0, WRITE_BLOCK_SIZE, data, &size_written, 0);
+        } else {
+            int sub_idx = current_sent % WRITE_BLOCK_SIZE;
+            glip_write(ctx, 0, WRITE_BLOCK_SIZE - sub_idx, &data[sub_idx], &size_written);
+        }
         current_sent += size_written;
     }
     if (current_received != current_sent) {
@@ -228,6 +241,11 @@ int main(int argc, char *argv[])
            current_sent, diff, (current_sent)/diff/1024/1024);
     printf("Write block size: %u bytes, read block size: %u bytes\n",
            WRITE_BLOCK_SIZE, READ_BLOCK_SIZE);
+    if (use_blocking_functions) {
+        printf("Used blocking function calls (glip_read_b() and glip_write_b())\n");
+    } else {
+        printf("Used non-blocking function calls (glip_read() and glip_write())\n");
+    }
     pthread_mutex_unlock(&done_mutex);
     return 0;
 }
@@ -243,7 +261,11 @@ void* read_from_target(void* ctx_void)
     pthread_mutex_lock(&done_mutex);
     int byte = 0;
     while (1) {
-        glip_read_b(ctx, 0, READ_BLOCK_SIZE, data_read, &size_read, 100);
+        if (use_blocking_functions) {
+            glip_read_b(ctx, 0, READ_BLOCK_SIZE, data_read, &size_read, 100);
+        } else {
+            glip_read(ctx, 0, READ_BLOCK_SIZE, data_read, &size_read);
+        }
         current_received += size_read;
 
         /* verify received data */
