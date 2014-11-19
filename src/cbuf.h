@@ -38,32 +38,9 @@
 /**
  * Circular buffer context structure
  */
-struct cbuf {
-    /** mutex protecting the fill/free level */
-    pthread_mutex_t level_mutex;
-    /**condition variable: the fill/free level changed */
-    pthread_cond_t level_changed;
+struct cbuf;
 
-    /** position to write the next entry to */
-    size_t wr_ptr;
-    /** position to read the next entry from */
-    size_t rd_ptr;
-
-    /** number of entries in the buffer */
-    size_t size;
-    /** the buffer itself */
-    uint8_t *data;
-
-    size_t hint_max_read_size;
-    size_t read_data_tmp_size;
-    uint8_t *read_data_tmp;
-
-    size_t hint_max_write_size;
-    size_t write_data_tmp_size;
-    uint8_t *write_data_tmp;
-};
-
-int cbuf_init(struct cbuf *buf, size_t size);
+int cbuf_init(struct cbuf **buf, size_t size);
 int cbuf_free(struct cbuf *buf);
 
 int cbuf_write(struct cbuf *buf, const uint8_t *data, size_t size);

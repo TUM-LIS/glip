@@ -130,6 +130,32 @@
  * @{
  */
 
+/* opaque context structure */
+struct cbuf {
+    /** mutex protecting the fill/free level */
+    pthread_mutex_t level_mutex;
+    /**condition variable: the fill/free level changed */
+    pthread_cond_t level_changed;
+
+    /** position to write the next entry to */
+    size_t wr_ptr;
+    /** position to read the next entry from */
+    size_t rd_ptr;
+
+    /** number of entries in the buffer */
+    size_t size;
+    /** the buffer itself */
+    uint8_t *data;
+
+    size_t hint_max_read_size;
+    size_t read_data_tmp_size;
+    uint8_t *read_data_tmp;
+
+    size_t hint_max_write_size;
+    size_t write_data_tmp_size;
+    uint8_t *write_data_tmp;
+};
+
 /**
  * Add two position pointers aware of the wrap-around
  *
@@ -150,30 +176,37 @@ static inline size_t _cbuf_ptr_add(struct cbuf *buf, size_t val1, size_t val2)
  * @return -ENOMEM if the memory allocation for the data buffer failed
  * @return any other value indicates an error
  */
-int cbuf_init(struct cbuf *buf, size_t size)
+int cbuf_init(struct cbuf **buf, size_t size)
 {
     /* size needs to be a power of two */
     assert((size != 0) && !(size & (size - 1)));
 
-    buf->data = calloc(size, sizeof(uint8_t));
-    if (buf->data == NULL) {
+    struct cbuf *b = calloc(1, sizeof(struct cbuf));
+    if (!b) {
         return -ENOMEM;
     }
-    buf->size = size;
 
-    buf->rd_ptr = 0;
-    buf->wr_ptr = 0;
+    b->data = calloc(size, sizeof(uint8_t));
+    if (b->data == NULL) {
+        return -ENOMEM;
+    }
+    b->size = size;
 
-    buf->hint_max_read_size = 0;
-    buf->read_data_tmp = NULL;
-    buf->read_data_tmp_size = 0;
+    b->rd_ptr = 0;
+    b->wr_ptr = 0;
 
-    buf->hint_max_write_size = 0;
-    buf->write_data_tmp = NULL;
-    buf->write_data_tmp_size = 0;
+    b->hint_max_read_size = 0;
+    b->read_data_tmp = NULL;
+    b->read_data_tmp_size = 0;
 
-    pthread_mutex_init(&buf->level_mutex, NULL);
-    pthread_cond_init(&buf->level_changed, NULL);
+    b->hint_max_write_size = 0;
+    b->write_data_tmp = NULL;
+    b->write_data_tmp_size = 0;
+
+    pthread_mutex_init(&b->level_mutex, NULL);
+    pthread_cond_init(&b->level_changed, NULL);
+
+    *buf = b;
 
     return 0;
 }
@@ -181,7 +214,7 @@ int cbuf_init(struct cbuf *buf, size_t size)
 /**
  * Free all resources of the buffer
  *
- * This function frees all resources inside the buffer, but not the buffer
+ * This function frees all resources inside the buffer, including the buffer
  * struct @p buf itself.
  *
  * @param buf the buffer
@@ -196,6 +229,7 @@ int cbuf_free(struct cbuf *buf)
     free(buf->data);
     free(buf->read_data_tmp);
     free(buf->write_data_tmp);
+    free(buf);
     return 0;
 }
 

@@ -240,12 +240,12 @@ struct glip_backend_ctx {
     pthread_attr_t usb_read_thread_attr;
 
     /** write circular buffer */
-    struct cbuf write_buf;
+    struct cbuf *write_buf;
     /** semaphore notifying the write thread of a new full packet available to be transferred */
     sem_t write_notification_sem;
 
     /** read circular buffer */
-    struct cbuf read_buf;
+    struct cbuf *read_buf;
     /** semaphore notifying the USB receiving thread to fetch new data */
     sem_t read_notification_sem;
 };
@@ -545,7 +545,7 @@ int gb_cypressfx2_open(struct glip_ctx *ctx, unsigned int num_channels)
         err(ctx, "Unable to setup write buffer: %d\n", rv);
         return -1;
     }
-    cbuf_set_hint_max_read_size(&ctx->backend_ctx->write_buf,
+    cbuf_set_hint_max_read_size(ctx->backend_ctx->write_buf,
                                 USB_MAX_PACKETS_PER_TRANSFER *
                                 USB_TRANSFER_PACKET_SIZE_BYTES);
 
@@ -620,8 +620,8 @@ int gb_cypressfx2_close(struct glip_ctx *ctx)
     ctx->backend_ctx->usb_dev_handle = NULL;
 
     /* teardown read/write buffer */
-    cbuf_free(&ctx->backend_ctx->write_buf);
-    cbuf_free(&ctx->backend_ctx->read_buf);
+    cbuf_free(ctx->backend_ctx->write_buf);
+    cbuf_free(ctx->backend_ctx->read_buf);
 
     return 0;
 }
@@ -677,10 +677,10 @@ int gb_cypressfx2_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-    size_t fill_level = cbuf_fill_level(&bctx->read_buf);
+    size_t fill_level = cbuf_fill_level(bctx->read_buf);
     size_t size_read_req = (size > fill_level ? fill_level : size);
 
-    int rv = cbuf_read(&bctx->read_buf, data, size_read_req);
+    int rv = cbuf_read(bctx->read_buf, data, size_read_req);
     if (rv < 0) {
         err(ctx, "Unable to get data from read buffer, rv = %d\n", rv);
         return -1;
@@ -690,7 +690,7 @@ int gb_cypressfx2_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
      * We request a new read from the USB device if at least one packet fits
      * into the read buffer. The read itself is done by the usb_read_thread.
      */
-    if (cbuf_free_level(&bctx->read_buf) >= USB_TRANSFER_PACKET_SIZE_BYTES) {
+    if (cbuf_free_level(bctx->read_buf) >= USB_TRANSFER_PACKET_SIZE_BYTES) {
         int sval;
         sem_getvalue(&bctx->read_notification_sem, &sval);
         if (sval == 0) {
@@ -732,11 +732,11 @@ int gb_cypressfx2_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         clock_gettime(CLOCK_REALTIME, &ts);
         timespec_add_ns(&ts, timeout * 1000 * 1000);
     }
-    while (cbuf_fill_level(&bctx->read_buf) < size) {
+    while (cbuf_fill_level(bctx->read_buf) < size) {
         if (timeout == 0) {
-            rv = cbuf_wait_for_level_change(&bctx->read_buf);
+            rv = cbuf_wait_for_level_change(bctx->read_buf);
         } else {
-            rv = cbuf_timedwait_for_level_change(&bctx->read_buf, &ts);
+            rv = cbuf_timedwait_for_level_change(bctx->read_buf, &ts);
         }
 
         if (rv != 0) {
@@ -786,10 +786,10 @@ int gb_cypressfx2_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-    unsigned int buf_size_free = cbuf_free_level(&bctx->write_buf);
+    unsigned int buf_size_free = cbuf_free_level(bctx->write_buf);
     *size_written = (size > buf_size_free ? buf_size_free : size);
 
-    cbuf_write(&bctx->write_buf, data, *size_written);
+    cbuf_write(bctx->write_buf, data, *size_written);
 
     /*
      * If half of the write buffer is filled we trigger the USB sending thread
@@ -802,7 +802,7 @@ int gb_cypressfx2_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
      * communication latency will be increased to at least
      * USB_TRANSFER_RETRY_TIMEOUT_MS per transfer.
      */
-    if (cbuf_fill_level(&bctx->write_buf) >= USB_BUF_SIZE / 2) {
+    if (cbuf_fill_level(bctx->write_buf) >= USB_BUF_SIZE / 2) {
         int sval;
         sem_getvalue(&bctx->write_notification_sem, &sval);
         if (sval == 0) {
@@ -843,11 +843,11 @@ int gb_cypressfx2_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
             break;
         }
 
-        if (cbuf_free_level(&bctx->write_buf) == 0) {
+        if (cbuf_free_level(bctx->write_buf) == 0) {
             if (timeout == 0) {
-                cbuf_wait_for_level_change(&bctx->write_buf);
+                cbuf_wait_for_level_change(bctx->write_buf);
             } else {
-                cbuf_timedwait_for_level_change(&bctx->write_buf, &ts);
+                cbuf_timedwait_for_level_change(bctx->write_buf, &ts);
             }
         }
     }
@@ -895,7 +895,7 @@ void* usb_write_thread(void* ctx_void)
         sem_timedwait(&ctx->backend_ctx->write_notification_sem, &ts);
 
 
-        unsigned int write_buf_fill_level = cbuf_fill_level(&bctx->write_buf);
+        unsigned int write_buf_fill_level = cbuf_fill_level(bctx->write_buf);
 
         /* no data to transfer */
         if (write_buf_fill_level == 0) {
@@ -938,7 +938,7 @@ void* usb_write_thread(void* ctx_void)
         unsigned int transfer_len_sent = 0;
         uint8_t* transfer_data;
 
-        rv = cbuf_peek(&bctx->write_buf, &transfer_data, transfer_len);
+        rv = cbuf_peek(bctx->write_buf, &transfer_data, transfer_len);
         assert(rv == 0);
 
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
@@ -967,7 +967,7 @@ void* usb_write_thread(void* ctx_void)
         }
 #endif
 
-        cbuf_discard(&bctx->write_buf, transfer_len_sent);
+        cbuf_discard(bctx->write_buf, transfer_len_sent);
     }
 
     return NULL;
@@ -1005,7 +1005,7 @@ void* usb_read_thread(void* ctx_void)
         /*
          * Read as many complete packets as the buffer can hold
          */
-        unsigned int free_level = cbuf_free_level(&bctx->read_buf);
+        unsigned int free_level = cbuf_free_level(bctx->read_buf);
         unsigned int num_packets = free_level / USB_TRANSFER_PACKET_SIZE_BYTES;
         if (num_packets > USB_MAX_PACKETS_PER_TRANSFER) {
             num_packets = USB_MAX_PACKETS_PER_TRANSFER;
@@ -1022,7 +1022,7 @@ void* usb_read_thread(void* ctx_void)
         /*
          * Reserve this amount of space in the read buffer
          */
-        cbuf_reserve(&bctx->read_buf, &buf, buf_size);
+        cbuf_reserve(bctx->read_buf, &buf, buf_size);
 
         /*
          * Read up to buf_size bytes from the USB device. If that much data
@@ -1048,7 +1048,7 @@ void* usb_read_thread(void* ctx_void)
             continue;
         }
 
-        cbuf_commit(&bctx->read_buf, buf, received);
+        cbuf_commit(bctx->read_buf, buf, received);
     }
 
     return NULL;
