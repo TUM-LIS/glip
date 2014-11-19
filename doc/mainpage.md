@@ -22,6 +22,7 @@ Feature Overview
  - Side-channel communication, e.g. reset signals
  - Extensive documentation
  - [MIT](http://opensource.org/licenses/MIT) licensed
+ - Developed on and for Linux
 
 Target Side
 -----------
@@ -37,12 +38,12 @@ communication tasks.
 
 The library is split up into several parts, which are described on individual
 pages. Look there for detailled instructions on the individual topics.
-- \ref library-init-deinit
-- \ref connection-handling
-- \ref communication
-- \ref log
-- \ref utilities
-- \ref backend
+- @ref library-init-deinit
+- @ref connection-handling
+- @ref communication
+- @ref log
+- @ref utilities
+- @ref backend
 
 Getting Started
 ---------------
@@ -54,7 +55,7 @@ host side, the following example shows a simple example code. Essentially, you
 need to initialize the library, connect to a target, read and write data from
 it, close the connection when you're done and free all allocated resources.
 
-\note The example below shows the error handling once to make the example
+@note The example below shows the error handling once to make the example
   easier to read. (Almost) all functions in the GLIP API use the same kind of
   error reporting: a return value of <code>0</code> indicates everything was
   OK, any other return value marks an error.
@@ -64,4 +65,4 @@ it, close the connection when you're done and free all allocated resources.
   <code>glip_set_</code> or <code>glip_is_</code>. Those functions return
   nothing (setters) or the requested value (setters).
 
-\include glip-simple.c
+@include glip-simple.c

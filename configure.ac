@@ -13,7 +13,7 @@ AC_INIT([glip],
         [GL_VERSION_MAJOR[.]GL_VERSION_MINOR[.]GL_VERSION_MICRO[]GL_VERSION_SUFFIX],
         [optimsoc@lis.ei.tum.de],
         [glip],
-        [http://www.optimsoc.org])
+        [http://glip.io])
 
 dnl Library versioning
 dnl http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html

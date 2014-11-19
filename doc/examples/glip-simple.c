@@ -32,8 +32,12 @@ if (rv != 0) {
  */
 glip_open(gctx, 1);
 
-/* send a reset signal to the attached logic */
-glip_reset(gctx);
+/*
+ * Send a reset signal to the attached logic. This does *not* reset the
+ * communication interface, the signal is only passed through to the user
+ * logic.
+ */
+glip_logic_reset(gctx);
 
 /*
  * Write 4 bytes of data to channel 0 and wait for it up to 1 second
