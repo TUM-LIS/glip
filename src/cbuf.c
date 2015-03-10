@@ -433,9 +433,15 @@ int cbuf_commit(struct cbuf *buf, uint8_t *data, size_t size)
          * we need to copy this temporary buffer to the final location now.
          */
         size_t size_at_end = buf->size - (buf->wr_ptr & (buf->size - 1));
-        size_t size_at_start = size - size_at_end;
         memcpy(&buf->data[buf->wr_ptr & (buf->size - 1)], data, size_at_end);
-        memcpy(buf->data, &data[size_at_end], size_at_start);
+
+        /*
+         * we possibly commit less than previously reserved
+         */
+        if (size > size_at_end) {
+            size_t size_at_start = size - size_at_end;
+            memcpy(buf->data, &data[size_at_end], size_at_start);
+        }
     }
 
     pthread_mutex_lock(&buf->level_mutex);
