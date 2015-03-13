@@ -696,7 +696,7 @@ int glip_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @param[in]  timeout      the timeout in milliseconds (ms) after which this
  *                          function gives up writing, i.e. the maximum blocking
  *                          time
- * @return 0 if the call was successful and @p size bytes have been read
+ * @return 0 if the call was successful and @p size bytes have been written
  * @return -ETIMEDOUT if the call timed out (some data might still have been
  *         written, see @p size_written)
  * @return any other value indicates an error
