@@ -15,7 +15,7 @@ Supported Features
 Components
 ==========
 
-To make use of this backend, a number of components is required, as shown in the
+To make use of this backend, a number of components are required, as shown in the
 graphic below.
 
             Host PC                Cypress FX2              Target FPGA
