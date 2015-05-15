@@ -54,7 +54,4 @@ int gb_tcp_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 unsigned int gb_tcp_get_channel_count(struct glip_ctx *ctx);
 unsigned int gb_tcp_get_fifo_width(struct glip_ctx *ctx);
 
-int connect_to_host(struct glip_ctx *ctx, const char *hostname,
-                    unsigned int port, int *socketfd);
-
 #endif /* __BACKEND_TCP_H__ */

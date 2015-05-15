@@ -6,7 +6,8 @@ lib_LTLIBRARIES = libglip.la
 
 libglip_la_SOURCES =\
 	cbuf.c \
-	glip.c 
+	glip.c \
+	util.c
 
 if BACKEND_CYPRESSFX2
 libglip_la_SOURCES += backend_cypressfx2/sw/backend_cypressfx2.c

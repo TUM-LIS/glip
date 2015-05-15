@@ -31,17 +31,18 @@
 #include "backend_cypressfx2.h"
 #include "glip-protected.h"
 #include "cbuf.h"
+#include "util.h"
 
 #include <assert.h>
 #include <config.h>
+#include <errno.h>
 #include <libusb.h>
 #include <limits.h>
 #include <semaphore.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <unistd.h>
-#include <errno.h>
 
 /**
  * @defgroup backend_cypressfx2-sw Cypress FX2 libglip backend
@@ -258,33 +259,6 @@ struct glip_backend_ctx {
 #ifndef LIBUSB_HAS_ERROR_STRING
 #define libusb_error_name(x) "(unknown error, update to libusb > 1.0.8)"
 #endif
-
-/*
- * The two functions below are "as seen in the Linux kernel".
- * see include/linux/math64.h and include/linux/time.h in the linux kernel tree
- */
-static inline uint32_t __iter_div_u64_rem(uint64_t dividend, uint32_t divisor,
-                                          uint64_t *remainder)
-{
-    uint32_t ret = 0;
-
-    while (dividend >= divisor) {
-        /* The following asm() prevents the compiler from
-           optimising this loop into a modulo operation. */
-        asm("" : "+rm"(dividend));
-        dividend -= divisor;
-        ret++;
-    }
-    *remainder = dividend;
-    return ret;
-}
-
-#define NSEC_PER_SEC 1000000000L
-static inline void timespec_add_ns(struct timespec *a, uint64_t ns)
-{
-    a->tv_sec += __iter_div_u64_rem(a->tv_nsec + ns, NSEC_PER_SEC, &ns);
-    a->tv_nsec = ns;
-}
 
 
 /**

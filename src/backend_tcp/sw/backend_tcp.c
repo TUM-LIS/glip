@@ -30,6 +30,7 @@
 
 #include "backend_tcp.h"
 #include "glip-protected.h"
+#include "util.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -157,7 +158,11 @@ int gb_tcp_open(struct glip_ctx *ctx, unsigned int num_channels)
 
     /* connect to data channel */
     bctx->data_sfd = 0;
-    rv = connect_to_host(ctx, hostname, port_data, &bctx->data_sfd);
+    rv = gl_util_connect_to_host(ctx, hostname, port_data, &bctx->data_sfd);
+    if (rv != 0) {
+        return -1;
+    }
+    rv = gl_util_fd_nonblock(ctx, bctx->data_sfd);
     if (rv != 0) {
         return -1;
     }
@@ -179,7 +184,11 @@ int gb_tcp_open(struct glip_ctx *ctx, unsigned int num_channels)
 
     /* connect to control channel */
     bctx->ctrl_sfd = 0;
-    rv = connect_to_host(ctx, hostname, port_ctrl, &bctx->ctrl_sfd);
+    rv = gl_util_connect_to_host(ctx, hostname, port_ctrl, &bctx->ctrl_sfd);
+    if (rv != 0) {
+        return -1;
+    }
+    rv = gl_util_fd_nonblock(ctx, bctx->ctrl_sfd);
     if (rv != 0) {
         return -1;
     }
@@ -464,91 +473,4 @@ unsigned int gb_tcp_get_channel_count(struct glip_ctx *ctx)
 unsigned int gb_tcp_get_fifo_width(struct glip_ctx *ctx)
 {
     return 2;
-}
-
-/**
- * Open a non-blocking socket connection
- *
- * @param[in]  ctx the library context
- * @param[in]  hostname the hostname to connect to
- * @param[in]  port the port to connect to
- * @param[out] sfd the resulting socket file descriptor (if the connection
- *                 was possible)
- * @return 0 if the connection was successful
- * @return any other value indicates an error
- *
- * @private
- */
-int connect_to_host(struct glip_ctx *ctx, const char *hostname,
-                    unsigned int port, int *sfd)
-{
-    struct addrinfo hints;
-    struct addrinfo *result, *rp;
-    int sfd_out;
-
-    memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_ADDRCONFIG | AI_V4MAPPED;
-    hints.ai_protocol = 0;          /* Any protocol */
-
-    char port_c[8];
-    if (port > 9999999) {
-        err(ctx, "Port %u out of bounds [0..9999999]\n", port);
-        return -1;
-    }
-    snprintf(port_c, sizeof(port_c), "%7u", port);
-
-    int s = getaddrinfo(hostname, port_c, &hints, &result);
-    if (s != 0) {
-        err(ctx, "getaddrinfo failed for %s:%d: %s\n",
-            hostname, port, gai_strerror(s));
-        return -1;
-    }
-
-    for (rp = result; rp != NULL; rp = rp->ai_next) {
-        int sfd_tmp = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sfd_tmp == -1) {
-            /* connection failed, try the next one */
-            dbg(ctx, "Unable to use connection: %s\n", strerror(errno));
-            continue;
-        }
-
-        if (connect(sfd_tmp, rp->ai_addr, rp->ai_addrlen) == 0) {
-            /* connection successful */
-            sfd_out = sfd_tmp;
-            break;
-        } else {
-            dbg(ctx, "connect() failed: %s\n", strerror(errno));
-        }
-
-        close(sfd_tmp);
-    }
-
-    if (rp == NULL) {
-        err(ctx, "Could not connect to %s:%u\n", hostname, port);
-        return -1;
-    }
-
-    freeaddrinfo(result);
-
-    /*
-     * make socket non-blocking
-     * We don't do that when creating the socket above to get a synchronous
-     * connect, but then asynchronous communication.
-     */
-    int flags = fcntl(sfd_out, F_GETFL, 0);
-    if (flags == -1) {
-        err(ctx, "Unable to get socket fd flags: %s\n", strerror(errno));
-        return -1;
-    }
-    flags |= O_NONBLOCK;
-    int rv = fcntl(sfd_out, F_SETFL, flags);
-    if (rv == -1) {
-        err(ctx, "Unable to set socket fd flags: %s\n", strerror(errno));
-        return -1;
-    }
-
-    *sfd = sfd_out;
-    return 0;
 }
