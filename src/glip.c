@@ -534,7 +534,7 @@ API_EXPORT
 int glip_logic_reset(struct glip_ctx *ctx)
 {
     if (!ctx->connected) {
-        err(ctx, "No connection; you need to call glip_open() first!");
+        err(ctx, "No connection; you need to call glip_open() first!\n");
         return -1;
     }
     return ctx->backend_functions.logic_reset(ctx);
@@ -570,7 +570,7 @@ int glip_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
               uint8_t *data, size_t *size_read)
 {
     if (!ctx->connected) {
-        err(ctx, "No connection; you need to call glip_open() first!");
+        err(ctx, "No connection; you need to call glip_open() first!\n");
         return -1;
     }
     if (size == 0) {
@@ -614,7 +614,7 @@ int glip_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
                 uint8_t *data, size_t *size_read, unsigned int timeout)
 {
     if (!ctx->connected) {
-        err(ctx, "No connection; you need to call glip_open() first!");
+        err(ctx, "No connection; you need to call glip_open() first!\n");
         return -1;
     }
     if (size == 0) {
@@ -669,7 +669,7 @@ int glip_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
                uint8_t *data, size_t *size_written)
 {
     if (!ctx->connected) {
-        err(ctx, "No connection; you need to call glip_open() first!");
+        err(ctx, "No connection; you need to call glip_open() first!\n");
         return -1;
     }
     if (size == 0) {
@@ -710,7 +710,7 @@ int glip_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
                  uint8_t *data, size_t *size_written, unsigned int timeout)
 {
     if (!ctx->connected) {
-        err(ctx, "No connection; you need to call glip_open() first!");
+        err(ctx, "No connection; you need to call glip_open() first!\n");
         return -1;
     }
     if (size == 0) {
