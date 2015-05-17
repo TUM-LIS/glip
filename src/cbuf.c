@@ -167,6 +167,31 @@ static inline size_t _cbuf_ptr_add(struct cbuf *buf, size_t val1, size_t val2)
 }
 
 /**
+ * Calculate a new buffer size
+ *
+ * The new size is the next power of two following @p size_req, but at most
+ * @p size_max.
+ *
+ * @param size_req the requested buffer size
+ * @param size_max the maximum buffer size
+ * @return the calculated buffer size
+ */
+static size_t _cbuf_calc_bufsize(size_t size_req, size_t size_max)
+{
+    int log2_size = 0;
+    size_t size_tmp = size_req;
+    while (size_tmp >>= 1) {
+        log2_size++;
+    }
+    size_t pow_two = (1 << (log2_size + 1));
+    if (pow_two > size_max) {
+        return size_max;
+    } else {
+        return pow_two;
+    }
+}
+
+/**
  * Initialize the buffer
  *
  * @param buf the buffer structure to be initialized
@@ -371,27 +396,11 @@ int cbuf_reserve(struct cbuf *buf, uint8_t **data, size_t size)
                 /* we can use the hint for the temporary buffer size */
                 buf->write_data_tmp_size = buf->hint_max_write_size;
             } else {
-                /*
-                 * temporary buffer growth strategy: use with what the user
-                 * requested in |size|, rounded up to the next power of two, up
-                 * to |buf->size|
-                 */
-                int log2_size = 0;
-                size_t size_tmp = size;
-                while (size_tmp >>= 1) {
-                    log2_size++;
-                }
-                size_t new_write_data_tmp_size = (1 << (log2_size + 1));
-                if (new_write_data_tmp_size > buf->size) {
-                    buf->write_data_tmp_size = buf->size;
-                } else {
-                    buf->write_data_tmp_size = new_write_data_tmp_size;
-                }
+                buf->write_data_tmp_size = _cbuf_calc_bufsize(size, buf->size);
             }
 
-            free(buf->write_data_tmp);
-            buf->write_data_tmp = malloc(buf->write_data_tmp_size *
-                                         sizeof(uint8_t));
+            buf->write_data_tmp = realloc(buf->write_data_tmp,
+                                          buf->write_data_tmp_size);
             if (buf->write_data_tmp == NULL) {
                 return -ENOMEM;
             }
@@ -555,25 +564,11 @@ int cbuf_peek(struct cbuf *buf, uint8_t **data, size_t size)
             /* we can use the hint for the temporary buffer size */
             buf->read_data_tmp_size = buf->hint_max_read_size;
         } else {
-            /*
-             * temporary buffer growth strategy: use with what the user
-             * requested in |size|, rounded up to the next power of two, up to
-             * |buf->size|
-             */
-            int bsr = 0;
-            while (size >>= 1) {
-                bsr++;
-            }
-            size_t new_read_data_tmp_size = (1 << (bsr + 1));
-            if (new_read_data_tmp_size > buf->size) {
-                buf->read_data_tmp_size = buf->size;
-            } else {
-                buf->read_data_tmp_size = new_read_data_tmp_size;
-            }
+            buf->read_data_tmp_size = _cbuf_calc_bufsize(size, buf->size);
         }
 
-        free(buf->read_data_tmp);
-        buf->read_data_tmp = malloc(buf->read_data_tmp_size * sizeof(uint8_t));
+        buf->read_data_tmp = realloc(buf->read_data_tmp,
+                                     buf->read_data_tmp_size);
         if (buf->read_data_tmp == NULL) {
             return -ENOMEM;
         }
@@ -581,7 +576,8 @@ int cbuf_peek(struct cbuf *buf, uint8_t **data, size_t size)
 
     /* from rd_ptr to end of array */
     int size_to_end = buf->size - (buf->rd_ptr & (buf->size - 1));
-    memcpy(buf->read_data_tmp, &buf->data[buf->rd_ptr & (buf->size - 1)], size_to_end);
+    memcpy(buf->read_data_tmp, &buf->data[buf->rd_ptr & (buf->size - 1)],
+           size_to_end);
     /* from the beginning of the array until we have enough */
     memcpy(&buf->read_data_tmp[size_to_end], buf->data, size - size_to_end);
 
