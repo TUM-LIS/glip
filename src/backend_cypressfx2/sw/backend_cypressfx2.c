@@ -532,6 +532,7 @@ int gb_cypressfx2_open(struct glip_ctx *ctx, unsigned int num_channels)
 
     /* initialize event notifications */
     sem_init(&ctx->backend_ctx->write_notification_sem, 0, 0);
+    sem_init(&ctx->backend_ctx->read_notification_sem, 0, 0);
 
     /* start thread for sending data to the USB device */
     pthread_attr_init(&ctx->backend_ctx->usb_write_thread_attr);
@@ -574,8 +575,9 @@ int gb_cypressfx2_close(struct glip_ctx *ctx)
         return -1;
     }
 
-    /* teardown event nofications */
+    /* tear down event notifications */
     sem_destroy(&ctx->backend_ctx->write_notification_sem);
+    sem_destroy(&ctx->backend_ctx->read_notification_sem);
 
     /* clean-up USB write thread */
     void *status;
@@ -583,7 +585,7 @@ int gb_cypressfx2_close(struct glip_ctx *ctx)
     pthread_join(ctx->backend_ctx->usb_write_thread, &status);
     pthread_attr_destroy(&ctx->backend_ctx->usb_write_thread_attr);
 
-    /* teardown usb communication */
+    /* tear down USB communication */
     int rv = libusb_release_interface(ctx->backend_ctx->usb_dev_handle, 0);
     if (rv < 0) {
         err(ctx, "Unable to release claimed USB interface: %s\n",
@@ -593,7 +595,7 @@ int gb_cypressfx2_close(struct glip_ctx *ctx)
     libusb_close(ctx->backend_ctx->usb_dev_handle);
     ctx->backend_ctx->usb_dev_handle = NULL;
 
-    /* teardown read/write buffer */
+    /* tear down read/write buffer */
     cbuf_free(ctx->backend_ctx->write_buf);
     cbuf_free(ctx->backend_ctx->read_buf);
 
