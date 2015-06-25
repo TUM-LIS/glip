@@ -75,6 +75,8 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ga7d0be4589ed029033229def542e9d68b"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#ga7d0be4589ed029033229def542e9d68b">_cbuf_calc_bufsize</a> (size_t size_req, size_t size_max)</td></tr>
+<tr class="separator:ga7d0be4589ed029033229def542e9d68b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga08c2eec48a1f36acd6a1c2b98720cd60"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#ga08c2eec48a1f36acd6a1c2b98720cd60">cbuf_init</a> (struct <a class="el" href="structcbuf.html">cbuf</a> **buf, size_t size)</td></tr>
 <tr class="separator:ga08c2eec48a1f36acd6a1c2b98720cd60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5c0b5b3b64ddeb2094ad81e17b9c3072"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#ga5c0b5b3b64ddeb2094ad81e17b9c3072">cbuf_free</a> (struct <a class="el" href="structcbuf.html">cbuf</a> *buf)</td></tr>
@@ -148,6 +150,50 @@ Utility Functionality</h1>
 <li>Optimizations: <a class="el" href="group__development-cbuf.html#ga82522b71b0c0bbe512795f1d57b5d402">cbuf_set_hint_max_read_size()</a> and <a class="el" href="group__development-cbuf.html#gadb977647a0d6f8795c5bb097044cf4a8">cbuf_set_hint_max_write_size()</a> </li>
 </ul>
 <h2 class="groupheader">Function Documentation</h2>
+<a class="anchor" id="ga7d0be4589ed029033229def542e9d68b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static size_t _cbuf_calc_bufsize </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size_req</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size_max</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Calculate a new buffer size</p>
+<p>The new size is the next power of two following <code>size_req</code>, but at most <code>size_max</code>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">size_req</td><td>the requested buffer size </td></tr>
+    <tr><td class="paramname">size_max</td><td>the maximum buffer size </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the calculated buffer size </dd></dl>
+
+</div>
+</div>
 <a class="anchor" id="ga08c2eec48a1f36acd6a1c2b98720cd60"></a>
 <div class="memitem">
 <div class="memproto">
@@ -762,7 +808,7 @@ any other value indicates an error</dd></dl>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Mon May 11 2015 09:19:52 for glip by
+    <li class="footer">Generated on Thu Jun 25 2015 13:45:18 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

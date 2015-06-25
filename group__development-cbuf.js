@@ -14,6 +14,7 @@ var group__development_cbuf =
       [ "write_data_tmp_size", "structcbuf.html#aea76c0a9e4870370c72a179fcb389d92", null ],
       [ "write_data_tmp", "structcbuf.html#afb8c7b17422ac0346080ced9ff788cbc", null ]
     ] ],
+    [ "_cbuf_calc_bufsize", "group__development-cbuf.html#ga7d0be4589ed029033229def542e9d68b", null ],
     [ "cbuf_init", "group__development-cbuf.html#ga08c2eec48a1f36acd6a1c2b98720cd60", null ],
     [ "cbuf_free", "group__development-cbuf.html#ga5c0b5b3b64ddeb2094ad81e17b9c3072", null ],
     [ "cbuf_set_hint_max_read_size", "group__development-cbuf.html#ga82522b71b0c0bbe512795f1d57b5d402", null ],

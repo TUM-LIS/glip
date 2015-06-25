@@ -65,8 +65,7 @@ $(document).ready(function(){initNavTree('group__backend__cypressfx2-sw.html',''
 </div><!--header-->
 <div class="contents">
 <p>The Cypress FX2 backend connects over a USB 2.0 connection to targets with a Cypress EZ-USB FX2 USB chip.</p>
-<h1><a class="anchor" id="backend_cypressfx2-sw-configoptions"></a>
-Configuration Options</h1>
+<h1>Configuration Options </h1>
 <p>Use the "cypressfx2" backend name with <a class="el" href="group__library-init-deinit.html#ga07ef447749459259d67ef538a1e68ad8">glip_new()</a>. The following options are available:</p>
 <table class="doxtable">
 <caption align="bottom"><code>cypressfx2</code> backend options</caption>
@@ -83,32 +82,27 @@ Configuration Options</h1>
 <tr>
 <td><code>usb_product</code> </td><td>the USB product name of the device (for auto-discovery)  </td></tr>
 </table>
-<h2><a class="anchor" id="USB"></a>
-Device Auto-Discovery</h2>
+<h2>USB Device Auto-Discovery </h2>
 <p>The used USB device can either be auto-discovered or manually specified. Both mechanisms can be configured through options.</p>
 <p>To <b>manually specify</b> a specific USB device to be used, set the options <code>usb_dev_bus</code> and <code>usb_dev_addr</code>. <code>usb_dev_bus</code> specifies the bus the device is connected to, <code>usb_dev_addr</code> specifies the address of the device on the given bus.</p>
 <p>To <b>automatically discover</b> the used USB device, a filter with supported devices is necessary. This filter is applied to some fields of the device descriptor, namely the vendor id (idVendor), the product id (idProduct), the product name string (iProduct) and the manufacturer name string (iManufacturer). It is possible to either specify a custom filter, or to rely on a built-in list of well-known devices.</p>
-<p>To set a <b>custom filter</b> the following options are used: </p><ul>
-<li>
-<code>usb_vid</code>: the vendor ID </li>
-<li>
-<code>usb_pid</code>: the product ID </li>
-<li>
-<code>usb_manufacturer</code>: the manufacturer name string (not matched if omitted) </li>
-<li>
-<code>usb_product</code>: the product name string (not matched if omitted) </li>
+<p>To set a custom filter the following options are used:</p><ul>
+<li><code>usb_vid</code>: the vendor ID</li>
+<li><code>usb_pid</code>: the product ID</li>
+<li><code>usb_manufacturer</code>: the manufacturer name string (not matched if omitted)</li>
+<li><code>usb_product</code>: the product name string (not matched if omitted)</li>
 </ul>
 <p>If no option is specified, the built-in list of devices is tried.</p>
 <dl class="section note"><dt>Note</dt><dd>When using the automatic device discovery based on filters it is possible that more than one device matches the filter. In this case any device might be used, i.e. the used device is unspecified. The only way to prevent this is to manually specify a device based on bus and address.</dd></dl>
-<h1><a class="anchor" id="Device"></a>
-Permissions</h1>
-<p>The user running the application using GLIP needs to have sufficient permissions to read and write from the USB device. This can be done through a simple <code>sudo chmod a+rw /dev/bus/usb/&lt;BUS&gt;/&lt;ADDR&gt;</code> after obtaining the bus and address information of the target device, e.g. through the <code>lsusb</code> command. A more permanent way of setting those permissions is to write a custom udev rule, usually based on the USB VID/PID combination. The Internet has plenty of examples of such udev rules available. </p>
+<h1>Device Permissions </h1>
+<p>The user running the application using GLIP needs to have sufficient permissions to read and write from the USB device. This can be done through a simple </p><pre class="fragment">sudo chmod a+rw /dev/bus/usb/&lt;BUS&gt;/&lt;ADDR&gt;
+</pre><p>after obtaining the bus and address information of the target device, e.g. through the <code>lsusb</code> command. A more permanent way of setting those permissions is to write a custom udev rule, usually based on the USB VID/PID combination. The Internet has plenty of examples of such udev rules available. </p>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Mon May 11 2015 09:19:52 for glip by
+    <li class="footer">Generated on Thu Jun 25 2015 13:45:18 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
