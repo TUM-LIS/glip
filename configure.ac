@@ -107,6 +107,15 @@ AM_CONDITIONAL([BACKEND_TCP], [test "x$enable_tcp" = "xyes"])
 
 GLIP_CONFIG_BACKEND(tcp, TCP)
 
+
+AC_ARG_ENABLE([jtag],
+    AS_HELP_STRING([--enable-jtag], [enable JTAG backend @<:@default=disabled@:>@]),
+    [],
+    [enable_jtag=no])
+AM_CONDITIONAL([BACKEND_JTAG], [test "x$enable_jtag" = "xyes"])
+
+GLIP_CONFIG_BACKEND(jtag, JTAG)
+
 dnl ----- COMPILER AND LINKER DEFAULT FLAGS -----
 AM_CFLAGS="-Wall \
     -Wmissing-declarations -Wmissing-prototypes \
@@ -167,5 +176,6 @@ AC_MSG_RESULT([
         backends:
         cypressfx2              ${enable_cypressfx2}
         tcp                     ${enable_tcp}
+        jtag                    ${enable_jtag}
 ])
 

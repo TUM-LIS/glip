@@ -74,4 +74,7 @@ int gl_util_connect_to_host(struct glip_ctx *ctx, const char *hostname,
                             unsigned int port, int *socketfd);
 int gl_util_fd_nonblock(struct glip_ctx *ctx, int fd);
 
+int gl_util_popen(const char *file, char *const argv[], int *infd, int *outfd);
+int gl_util_pclose(pid_t pid);
+
 #endif /* __UTIL_H__ */

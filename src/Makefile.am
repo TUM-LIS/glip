@@ -19,6 +19,15 @@ if BACKEND_TCP
 libglip_la_SOURCES += backend_tcp/sw/backend_tcp.c
 endif
 
+if BACKEND_JTAG
+libglip_la_SOURCES += backend_jtag/sw/backend_jtag.c
+
+backend_jtag_dir = $(pkgdatadir)/backend_jtag
+openocd_dir = $(backend_jtag_dir)/openocd
+openocd__DATA = $(top_srcdir)/src/backend_jtag/openocd/glip.cfg
+endif
+
 libglip_la_LDFLAGS = $(AM_LDFLAGS) $(LTLDFLAGS)
 libglip_la_CPPFLAGS = $(AM_CPPFLAGS) \
-                      -I $(top_srcdir)/include
+                      -I $(top_srcdir)/include \
+                      -DPKGDATADIR='"$(pkgdatadir)"'

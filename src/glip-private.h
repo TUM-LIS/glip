@@ -54,6 +54,10 @@
 #ifdef BACKEND_TCP_ENABLED
 #include "backend_tcp/sw/backend_tcp.h"
 #endif
+#ifdef BACKEND_JTAG_ENABLED
+#include "backend_jtag/sw/backend_jtag.h"
+#endif
+
 
 /**
  * Macro used by the configure script to enable a backend in the glip_backends
@@ -91,7 +95,8 @@ struct glip_backend {
  */
 static struct glip_backend glip_backends[] = {
     BACKEND_CYPRESSFX2,
-    BACKEND_TCP
+    BACKEND_TCP,
+    BACKEND_JTAG
 };
 
 #endif /* __GLIP_PRIVATE_H__ */

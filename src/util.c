@@ -135,3 +135,118 @@ int gl_util_fd_nonblock(struct glip_ctx *ctx, int fd)
     }
     return 0;
 }
+
+/**
+ * Start a program and attach to the STDIN and STDOUT streams
+ *
+ * This function is used in similar situations as popen(), but differs in some
+ * ways:
+ * - The program is executed directly, not through a shell.
+ * - STDERR is redirected to STDOUT (@p outfd)
+ * - The process id of the child is returned. With the PID the process can be
+ *   killed properly.
+ *
+ * @param file the file to execute. A relative file name is searched in $PATH,
+ *             see man execvp() for details.
+ * @param argv the arguments passed to the program. Make sure that the first
+ *             argument is the name of the executable.
+ * @param infd the STDIN file descriptor of the child. Set to NULL if unused.
+ * @param outfd the STDOUT/STDERR file descriptor of the child. Set to NULL if
+ *              unused.
+ * @return the child process PID
+ * @return an value <= 0 indicates an error
+ *
+ * @see gl_util_pclose()
+ */
+int gl_util_popen(const char *file, char *const argv[], int *infd, int *outfd)
+{
+    int pfd_stdin[2], pfd_stdout[2], pfd_stderr[2];
+    pid_t cpid;
+
+    if (pipe(pfd_stdin) || pipe(pfd_stdout) || pipe(pfd_stderr)) {
+        return -1;
+    }
+
+    cpid = fork();
+    if (cpid == -1) {
+        return -1;
+    }
+
+    if (cpid == 0) {
+        /* in the child */
+        dup2(pfd_stdin[0], STDIN_FILENO);
+        dup2(pfd_stdout[1], STDOUT_FILENO);
+        /* send stdout to stderr */
+        dup2(pfd_stdout[1], STDERR_FILENO);
+
+        /* close unused descriptors in child */
+        close(pfd_stdin[0]);
+        close(pfd_stdin[1]);
+        close(pfd_stdout[0]);
+        close(pfd_stdout[1]);
+        close(pfd_stderr[0]);
+        close(pfd_stderr[1]);
+
+        execvp(file, argv);
+        perror("execvp");
+        exit(1);
+    } else {
+        /* close unused descriptors in parent */
+        close(pfd_stdin[0]);
+        close(pfd_stdout[1]);
+
+        close(pfd_stderr[0]);
+        close(pfd_stderr[1]);
+
+
+        if (!infd) {
+            close(pfd_stdin[1]);
+        } else {
+            *infd = pfd_stdin[1];
+        }
+
+        if (!outfd) {
+            close(pfd_stdout[0]);
+        } else {
+            *outfd = pfd_stdout[0];
+        }
+
+        return cpid;
+    }
+}
+
+
+/**
+ * Terminate a process and close the pipes
+ *
+ * Send SIGHUP (first) and SIGKILL (if SIGHUP didn't work) to the process @p pid
+ * and wait for it to terminate.
+ *
+ * @param pid the PID of the process to close
+ * @return
+ *
+ * @see gl_util_pclose()
+ */
+int gl_util_pclose(pid_t pid)
+{
+    int status;
+
+    /* send HUP and wait for process to finish */
+    kill(pid, SIGHUP);
+    for (int i = 0; i < 10; i++) {
+        waitpid(pid, &status, WNOHANG);
+        if (WIFEXITED(status)) {
+            return 0;
+        }
+        usleep(10*1000); /* 10 ms */
+    }
+
+    /* send KILL and try again */
+    kill(pid, SIGKILL);
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status)) {
+        return 0;
+    }
+
+    return -1;
+}
