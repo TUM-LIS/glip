@@ -83,13 +83,13 @@ $&gt; make bitstream
 <tr>
 <th>JTAG Name </th><th>ZTEX 1.15d pin </th><th>FPGA pad </th><th>Olimex pin  </th></tr>
 <tr>
-<td>tck </td><td></td><td>D7 </td><td>9 </td></tr>
+<td>tck </td><td>B27 </td><td>D7 </td><td>9 </td></tr>
 <tr>
-<td>tms </td><td></td><td>A8 </td><td>7 </td></tr>
+<td>tms </td><td>A26 </td><td>A8 </td><td>7 </td></tr>
 <tr>
-<td>tdi </td><td></td><td>B8 </td><td>5 </td></tr>
+<td>tdi </td><td>B26 </td><td>B8 </td><td>5 </td></tr>
 <tr>
-<td>tdo </td><td></td><td>C5 </td><td>13 </td></tr>
+<td>tdo </td><td>B29 </td><td>C5 </td><td>13 </td></tr>
 </table>
 <p>All other JTAG pins (especially TRST) are not used, as their functionality can be emulated using the other signals.</p>
 <p>Further reading:</p><ul>
@@ -106,14 +106,12 @@ $&gt; make bitstream
 </pre><h3>Using Xilinx Impact</h3>
 <p>This method requires a JTAG connection between the board and your PC using a standard JTAG adapter. More information is available from <a href="http://wiki.ztex.de/doku.php?id=en:ztex_boards:ztex_fpga_boards:jtag">ZTEX</a> and in the ISE/Impact documentation from Xilinx.</p>
 <h2>Execute the loopback measurement tool </h2>
-<p>Execute the GLIP tool "Loopback Mesasure" that measures the loopback performance. </p><pre class="fragment">$&gt; glip_loopback_measure -b jtag -o oocd_conf_interface=interface/ftdi/olimex-arm-usb-tiny-h.cfg
-</pre><p>The performance should be around 100 kByte/s bidirectional. </p>
-</div><!-- contents -->
+<p>Execute the GLIP tool "Loopback Mesasure" that measures the loopback performance. </p><pre class="fragment">$&gt; glip_loopback_measure -b jtag -o oocd_conf_interface=interface/ftdi/olimex-arm-usb-tiny-h.cfg</pre></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Wed Jul 8 2015 09:51:19 for glip by
+    <li class="footer">Generated on Wed Jul 8 2015 10:04:03 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
