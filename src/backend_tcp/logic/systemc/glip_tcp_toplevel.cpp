@@ -247,6 +247,13 @@ int glip_tcp_toplevel::listen_socket(unsigned int port)
         return -1;
     }
 
+    // reuse existing socket to avoid socket timeout
+    int enable = 1;
+    rv = setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+    if (rv == -1) {
+        fprintf(stderr, "Unable to mark socket reusable: %s\n", strerror(errno));
+    }
+
     // bind address
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
