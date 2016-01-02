@@ -24,3 +24,13 @@ The following parameters need to be set:
 
 The backend currently does not support logic reset as there is no
 out-of-band signaling. Doing it in-band is a peding feature.
+
+
+Ressource Utilization
+---------------------
+
+The following resource utilization of the hardware logic was measured
+on a Xilinx 7 Series device:
+
+| LUTs | Registers | BRAMs |
+| 180  | 185       | 1     |

@@ -399,7 +399,6 @@ int gb_uart_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 			}
 
 			if (tval_diff.tv_usec > (timeout * 1000)) {
-				printf("Timeout\n");
 				return -ETIMEDOUT;
 			}
 		}
