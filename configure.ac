@@ -71,6 +71,14 @@ else
 fi
 ])
 
+AC_ARG_ENABLE([uart],
+    AS_HELP_STRING([--enable-uart], [enable UART backend @<:@default=enabled@:>@]),
+    [],
+    [enable_uart=yes])
+AM_CONDITIONAL([BACKEND_UART], [test "x$enable_uart" = "xyes"])
+
+GLIP_CONFIG_BACKEND(uart, UART)
+
 AC_ARG_ENABLE([cypressfx2],
     AS_HELP_STRING([--enable-cypressfx2], [enable Cypress FX2 USB backend @<:@default=disabled@:>@]),
     [],
@@ -174,6 +182,7 @@ AC_MSG_RESULT([
         ldflags:                ${LDFLAGS}
 
         backends:
+        uart                    ${enable_uart}
         cypressfx2              ${enable_cypressfx2}
         tcp                     ${enable_tcp}
         jtag                    ${enable_jtag}

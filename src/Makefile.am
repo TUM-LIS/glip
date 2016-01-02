@@ -9,6 +9,10 @@ libglip_la_SOURCES =\
 	glip.c \
 	util.c
 
+if BACKEND_UART
+libglip_la_SOURCES += backend_uart/sw/backend_uart.c
+endif
+
 if BACKEND_CYPRESSFX2
 libglip_la_SOURCES += backend_cypressfx2/sw/backend_cypressfx2.c
 AM_CFLAGS += $(libusb_CFLAGS)
