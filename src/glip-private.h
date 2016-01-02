@@ -48,6 +48,9 @@
  * NOTE BACKEND AUTHORS:
  *   If you add a new backend to GLIP include the header here!
  */
+#ifdef BACKEND_UART_ENABLED
+#include "backend_uart/sw/backend_uart.h"
+#endif
 #ifdef BACKEND_CYPRESSFX2_ENABLED
 #include "backend_cypressfx2/sw/backend_cypressfx2.h"
 #endif
@@ -94,6 +97,7 @@ struct glip_backend {
  *   If you add a new backend to GLIP add it here too!
  */
 static struct glip_backend glip_backends[] = {
+    BACKEND_UART,
     BACKEND_CYPRESSFX2,
     BACKEND_TCP,
     BACKEND_JTAG
