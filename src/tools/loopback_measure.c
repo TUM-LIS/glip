@@ -236,12 +236,18 @@ int main(int argc, char *argv[])
     }
     while (current_sent < transfer_size) {
         size_t size_written;
+        size_t block_size = WRITE_BLOCK_SIZE;
+
+        if ((current_sent + WRITE_BLOCK_SIZE) > transfer_size) {
+            block_size = transfer_size - current_sent;
+        }
+
         if (use_blocking_functions) {
-            rv = glip_write_b(glip_ctx, 0, WRITE_BLOCK_SIZE, data,
+            rv = glip_write_b(glip_ctx, 0, block_size, data,
                               &size_written, 0);
         } else {
             int sub_idx = current_sent % WRITE_BLOCK_SIZE;
-            rv = glip_write(glip_ctx, 0, WRITE_BLOCK_SIZE - sub_idx,
+            rv = glip_write(glip_ctx, 0, block_size - sub_idx,
                             &data[sub_idx], &size_written);
         }
         if (rv != 0 && rv != -ETIMEDOUT) {
