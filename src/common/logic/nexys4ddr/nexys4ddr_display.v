@@ -33,7 +33,7 @@
 module nexys4ddr_display
   #(
     parameter FREQ = 32'hx,
-    parameter REFRESH = 100
+    parameter REFRESH = 1200
     )
   (
    input 	    clk,
