@@ -47,13 +47,16 @@ pages. Look there for detailled instructions on the individual topics.
 
 Getting Started
 ---------------
-Using GLIP is easy, but depends a bit on the selected target. For the ZTEX 2.13
-boards we provide a
-[full loopback demo](@ref backend_cypressfx2-examples-ztex_213_loopback) with
-all required Verilog and C code. To get an impression of how to use GLIP on the
-host side, the following example shows a simple example code. Essentially, you
-need to initialize the library, connect to a target, read and write data from
-it, close the connection when you're done and free all allocated resources.
+
+Using GLIP is easy, but depends a bit on the selected target. Some
+[demonstration examples](@ref examples) to get a quick start on some
+selected platforms.
+
+To get an impression of how to use GLIP on the host side, the
+following example shows a simple example code. Essentially, you need
+to initialize the library, connect to a target, read and write data
+from it, close the connection when you're done and free all allocated
+resources.
 
 @note The example below shows the error handling once to make the example
   easier to read. (Almost) all functions in the GLIP API use the same kind of

@@ -4,6 +4,7 @@
   <navindex>
     <tab type="mainpage" visible="yes" title="GLIP Introduction"/>
     <tab type="pages" visible="no" title="" intro=""/>
+    <tab type="user" url="@ref examples" title="Demos"/>
     <tab type="modules" visible="yes" title="Documentation" intro="Select a topic of the documentation."/>
     <tab type="namespaces" visible="no" title="">
       <tab type="namespacelist" visible="yes" title="" intro=""/>
