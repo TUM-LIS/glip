@@ -39,6 +39,7 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li class="current"><a href="index.html"><span>GLIP&#160;Introduction</span></a></li>
+      <li><a href="examples.html"><span>Demos</span></a></li>
       <li><a href="modules.html"><span>Documentation</span></a></li>
       <li><a href="download.html"><span>Download</span></a></li>
       <li><a href="contact.html"><span>Contact</span></a></li>
@@ -93,7 +94,8 @@ Logic Interface". The actual implementation is specific to the target and the us
 <li><a class="el" href="group__backend.html">Backends</a></li>
 </ul>
 <h2>Getting Started </h2>
-<p>Using GLIP is easy, but depends a bit on the selected target. For the ZTEX 2.13 boards we provide a <a class="el" href="group__backend__cypressfx2-examples-ztex__213__loopback.html">full loopback demo</a> with all required Verilog and C code. To get an impression of how to use GLIP on the host side, the following example shows a simple example code. Essentially, you need to initialize the library, connect to a target, read and write data from it, close the connection when you're done and free all allocated resources.</p>
+<p>Using GLIP is easy, but depends a bit on the selected target. Some <a class="el" href="examples.html">demonstration examples</a> to get a quick start on some selected platforms.</p>
+<p>To get an impression of how to use GLIP on the host side, the following example shows a simple example code. Essentially, you need to initialize the library, connect to a target, read and write data from it, close the connection when you're done and free all allocated resources.</p>
 <dl class="section note"><dt>Note</dt><dd>The example below shows the error handling once to make the example easier to read. (Almost) all functions in the GLIP API use the same kind of error reporting: a return value of <code>0</code> indicates everything was OK, any other return value marks an error. Make sure to check <b>all</b> return codes in your production code. The only notable exception to this convention are the getter and setter functions, i.e. functions starting with <code>glip_get_</code>, <code>glip_set_</code> or <code>glip_is_</code>. Those functions return nothing (setters) or the requested value (setters).</dd></dl>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;libglip.h&gt;</span></div>
 <div class="line"></div>
@@ -164,7 +166,7 @@ Logic Interface". The actual implementation is specific to the target and the us
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Sat Jan 2 2016 23:28:24 for glip by
+    <li class="footer">Generated on Sun Jan 3 2016 15:08:21 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

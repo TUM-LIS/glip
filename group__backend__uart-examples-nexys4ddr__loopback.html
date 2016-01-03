@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.9.1"/>
-<title>glip: BCD Counter</title>
+<title>glip: Nexys4 DDR UART Loopback Demo</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -57,16 +57,40 @@
   </div>
 </div>
 <script type="text/javascript">
-$(document).ready(function(){initNavTree('md_common_logic_bcdcounter_README.html','');});
+$(document).ready(function(){initNavTree('group__backend__uart-examples-nexys4ddr__loopback.html','');});
 </script>
 <div id="doc-content">
 <div class="header">
   <div class="headertitle">
-<div class="title">BCD Counter </div>  </div>
+<div class="title">Nexys4 DDR UART Loopback Demo<div class="ingroups"><a class="el" href="group__backend.html">Backends</a> &raquo; <a class="el" href="group__backend__uart.html">UART</a> &raquo; <a class="el" href="group__backend__uart-logic.html">UART FPGA Logic</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>A simple BCD counter. It sums up the <code>carry_in</code> values up to ten and generates <code>carry_out</code> on overflow. <code>carry_in</code> can have take values up to ten, <code>carry_out</code> is a single digit. You can cascade then by connecting the carry output of one to the LSB of the carry input of the next. </p>
-</div></div><!-- contents -->
+<p>This demo implements a loopback in the device. The seven segment display is used to show the current throughput in the loopback.</p>
+<h2>Prerequisites </h2>
+<p>For this demo you need:</p>
+<ul>
+<li><a href="http://store.digilentinc.com/nexys-4-ddr-artix-7-fpga-trainer-board-recommended-for-ece-curriculum/">Digilent's Nexys 4 DDR Board</a></li>
+<li><a href="http://www.xilinx.com/products/design-tools/vivado/">Xilinx Vivado</a> (the free WebPack edition is sufficient), version 2015.4 or higher</li>
+</ul>
+<h2>Download and compile glip </h2>
+<p>If you have not done this before you need to download and build glip: </p><pre class="fragment">git clone https://github.com/TUM-LIS/glip.git
+cd glip
+./autogen.sh
+mkdir build; cd build
+../configure
+make
+sudo make install
+</pre><h2>Synthesize the design </h2>
+<p>In the glip repository go to <code>src/backend_uart/logic/demo/nexys4ddr</code> and run: </p><pre class="fragment">make vivado-project
+vivado vivado/nexys4ddr.xpr
+</pre><p>In vivado run the implementation and generate the bitstream.</p>
+<h2>Configure the FPGA </h2>
+<p>When the bitstream has been succesfully generated, open the Hardware Manager, turn the board on and program the device.</p>
+<h2>Execute the loopback measurement tool </h2>
+<p>Execute the GLIP tool "Loopback Measure" that measures the loopback performance. </p><pre class="fragment">glip_loopback_measure -b uart -ospeed=3000000
+</pre><p>If the UART device cannot be found at <code>/dev/ttyUSB0</code> try others like <code>/dev/ttyUSB1</code> etc. If you can see the device, but cannot open, check the permissions.</p>
+<p>The performance should be 300 kByte/s bidirectional. </p>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

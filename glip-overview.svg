@@ -7,10 +7,34 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.2"
    width="531"
    height="182"
-   id="svg2">
+   id="svg2"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="glip-overview.svg">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1031"
+     id="namedview107"
+     showgrid="false"
+     inkscape:zoom="1.6778805"
+     inkscape:cx="175.54735"
+     inkscape:cy="75.128241"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
   <defs
      id="defs4">
     <marker
@@ -34,7 +58,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -450,18 +474,26 @@
            id="rect4195" /></flowRegion><flowPara
          id="flowPara4197"
          style="font-size:8px;text-align:center;text-anchor:middle" /></flowRoot>    <text
-       x="253.61328"
-       y="412.36218"
-       id="text3089"
        xml:space="preserve"
-       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Arial;-inkscape-font-specification:Arial"><tspan
-         x="255"
-         y="412.36218"
-         id="tspan3091"
-         style="font-size:10px">USB 2.0, TCP, </tspan><tspan
-         x="253.61328"
-         y="424.86218"
-         id="tspan3093"
-         style="font-size:10px">JTAG, PCIe, ...</tspan></text>
+       style="font-style:normal;font-weight:normal;font-size:12.5px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="255.51764"
+       y="408.03534"
+       id="text4245"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4247"
+         x="255.51764"
+         y="408.03534"
+         style="font-size:10px;text-align:center;text-anchor:middle;-inkscape-font-specification:'Sans Italic';font-family:Sans;font-weight:normal;font-style:italic;font-stretch:normal;font-variant:normal">UART, JTAG,</tspan><tspan
+         sodipodi:role="line"
+         x="257.10944"
+         y="420.53534"
+         id="tspan4249"
+         style="font-size:10px;text-align:center;text-anchor:middle;-inkscape-font-specification:'Sans Italic';font-family:Sans;font-weight:normal;font-style:italic;font-stretch:normal;font-variant:normal">USB, TCP, </tspan><tspan
+         sodipodi:role="line"
+         x="255.51764"
+         y="433.03534"
+         style="font-size:10px;text-align:center;text-anchor:middle;-inkscape-font-specification:'Sans Italic';font-family:Sans;font-weight:normal;font-style:italic;font-stretch:normal;font-variant:normal"
+         id="tspan4255">PCIe, ...</tspan></text>
   </g>
 </svg>

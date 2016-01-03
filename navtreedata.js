@@ -1,6 +1,7 @@
 var NAVTREE =
 [
   [ "glip", "index.html", [
+    [ "Demos", "examples.html", null ],
     [ "Documentation", "modules.html", "modules" ],
     [ "Download", "download.html", null ],
     [ "Contact", "contact.html", null ]
