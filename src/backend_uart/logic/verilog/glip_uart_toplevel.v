@@ -27,7 +27,7 @@
  * bit, no parity and one stop bit. All baud rates are supported, but
  * be careful with low frequencies and large baud rates that the
  * tolerance of the rounded bit divisor (rounding error of
- * FREQ/BAUD) is withint 2%.
+ * FREQ/BAUD) is within 2%.
  * 
  * Parameters:
  *  - FREQ: The frequency of the design, to match the second
@@ -56,40 +56,48 @@ module glip_uart_toplevel
     output 	 fifo_in_valid,
     input 	 fifo_in_ready,
 
+    // GLIP Control Interface
+    output 	 logic_rst,
+    
     // UART Interface
     input 	 uart_rx,
     output 	 uart_tx,
     input 	 uart_cts,
     output 	 uart_rts,
-
+    
     // Error signal if failure on the line
     output reg 	 error
     );
 
-   wire [7:0] 	  in_data;
-   wire 	  in_valid;
-   wire 	  in_ready;
-   wire [7:0] 	  out_data;
-   wire 	  out_valid;
-   wire 	  out_ready;   
+   wire [7:0] 	  ingress_in_data;
+   wire 	  ingress_in_valid;
+   wire 	  ingress_in_ready;
+   wire [7:0] 	  ingress_out_data;
+   wire 	  ingress_out_valid;
+   wire 	  ingress_out_ready;   
+   wire [7:0] 	  egress_in_data;
+   wire 	  egress_in_valid;
+   wire 	  egress_in_ready;
+   wire [7:0] 	  egress_out_data;
+   wire 	  egress_out_enable;
+   wire 	  egress_out_done;   
 
    // Map FIFO signals to flow control
    wire 	  in_fifo_almostfull;
    wire 	  in_fifo_empty;
    wire 	  out_fifo_full;
    wire 	  out_fifo_empty;
-   assign in_ready = ~in_almost_full;
+   assign ingress_out_ready = ~in_almost_full;
    assign fifo_in_valid = ~in_fifo_empty;
-   assign out_valid = ~out_fifo_empty;
+   assign egress_in_valid = ~out_fifo_empty;
    assign fifo_out_ready = ~out_fifo_full;
 
-   // Ready to receive if FIFO has a few places left and no error
-   // happened so far
-   assign uart_rts = ~(in_ready & ~error);
+   assign uart_rts = 0;
 
    // Generate error. Sticky when an error occured. Currently we only
    // have receiver errors if the frame was incorrect
    wire 	  rcv_error;
+   wire 	  control_error;
    always @(posedge clk_io) begin
       if (rst) begin
 	 error <= 0;
@@ -97,20 +105,48 @@ module glip_uart_toplevel
 	 error <= error | rcv_error;
       end
    end
+
+   /* glip_uart_control AUTO_TEMPLATE(
+    .clk   (clk_io),
+    .error (control_error),
+    ); */
+   (* dont_touch = "true" *) glip_uart_control
+     #(.FIFO_CREDIT_WIDTH(11),
+       .INPUT_FIFO_CREDIT(2000),
+       .FREQ(FREQ))
+   u_control(/*AUTOINST*/
+	     // Outputs
+	     .ingress_in_ready		(ingress_in_ready),
+	     .ingress_out_data		(ingress_out_data[7:0]),
+	     .ingress_out_valid		(ingress_out_valid),
+	     .egress_in_ready		(egress_in_ready),
+	     .egress_out_data		(egress_out_data[7:0]),
+	     .egress_out_enable		(egress_out_enable),
+	     .logic_rst			(logic_rst),
+	     .error			(control_error),	 // Templated
+	     // Inputs
+	     .clk			(clk_io),		 // Templated
+	     .rst			(rst),
+	     .ingress_in_data		(ingress_in_data[7:0]),
+	     .ingress_in_valid		(ingress_in_valid),
+	     .ingress_out_ready		(ingress_out_ready),
+	     .egress_in_data		(egress_in_data[7:0]),
+	     .egress_in_valid		(egress_in_valid),
+	     .egress_out_done		(egress_out_done));
    
    /* glip_uart_receive AUTO_TEMPLATE(
     .clk (clk_io),
     .rx  (uart_rx),
-    .enable (in_valid),
-    .data   (in_data),
+    .enable (ingress_in_valid),
+    .data   (ingress_in_data),
     .error  (rcv_error),
     ); */
    glip_uart_receive
      #(.DIVISOR(FREQ/BAUD))
    u_receive(/*AUTOINST*/
 	     // Outputs
-	     .enable			(in_valid),		 // Templated
-	     .data			(in_data),		 // Templated
+	     .enable			(ingress_in_valid),	 // Templated
+	     .data			(ingress_in_data),	 // Templated
 	     .error			(rcv_error),		 // Templated
 	     // Inputs
 	     .clk			(clk_io),		 // Templated
@@ -120,21 +156,21 @@ module glip_uart_toplevel
    /* glip_uart_transmit AUTO_TEMPLATE(
     .clk    (clk_io),
     .tx     (uart_tx),
-    .done   (out_ready),
-    .enable (out_valid & ~uart_cts),
-    .data   (out_data[]),
+    .done   (egress_out_done),
+    .enable (egress_out_enable & ~uart_cts),
+    .data   (egress_out_data[]),
     ); */
    glip_uart_transmit
      #(.DIVISOR(FREQ/BAUD))
    u_transmit(/*AUTOINST*/
 	      // Outputs
 	      .tx			(uart_tx),		 // Templated
-	      .done			(out_ready),		 // Templated
+	      .done			(egress_out_done),	 // Templated
 	      // Inputs
 	      .clk			(clk_io),		 // Templated
 	      .rst			(rst),
-	      .data			(out_data[7:0]),	 // Templated
-	      .enable			(out_valid & ~uart_cts)); // Templated
+	      .data			(egress_out_data[7:0]),	 // Templated
+	      .enable			(egress_out_enable & ~uart_cts)); // Templated
    
    // Clock domain crossing uart -> logic
    FIFO_DUALCLOCK_MACRO
@@ -155,12 +191,12 @@ module glip_uart_toplevel
       .RDERR       (),
       .WRCOUNT     (),
       .WRERR       (),
-      .DI          (in_data[7:0]),
+      .DI          (ingress_out_data[7:0]),
       .RDCLK       (clk_logic),
-      .RDEN        (fifo_in_ready & fifo_in_valid),
-      .RST         (rst),
+      .RDEN        (fifo_in_ready),
+      .RST         (logic_rst),
       .WRCLK       (clk_io),
-      .WREN        (in_valid & in_ready)
+      .WREN        (ingress_out_valid)
       );
    
    // Clock domain crossing logic -> uart
@@ -175,7 +211,7 @@ module glip_uart_toplevel
    out_fifo
      (.ALMOSTEMPTY (),
       .ALMOSTFULL  (),
-      .DO          (out_data),
+      .DO          (egress_in_data),
       .EMPTY       (out_fifo_empty),
       .FULL        (out_fifo_full),
       .RDCOUNT     (),
@@ -184,10 +220,10 @@ module glip_uart_toplevel
       .WRERR       (),
       .DI          (fifo_out_data[7:0]),
       .RDCLK       (clk_io),
-      .RDEN        (out_ready & out_valid),
-      .RST         (rst),
+      .RDEN        (egress_in_ready),
+      .RST         (logic_rst),
       .WRCLK       (clk_logic),
-      .WREN        (fifo_out_valid & fifo_out_ready)
+      .WREN        (fifo_out_valid)
       );
    
 endmodule // glip_uart_toplevel

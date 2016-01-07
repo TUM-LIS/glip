@@ -24,7 +24,7 @@ For details and usage instructions for the individual components, see these
 pages:
 - @ref backend_uart-sw "libglip Backend"
 - @ref backend_uart-logic "FPGA Logic"
-
+- @ref backend_uart-protocol "Details of the end-to-end flow control"
 
 Performance
 ==========

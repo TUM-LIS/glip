@@ -104,6 +104,8 @@ module nexys4ddr
       end
    end
 
+   wire logic_rst;
+
    glip_uart_toplevel
      #(.FREQ(FREQ),
        .BAUD(BAUD))
@@ -115,6 +117,7 @@ module nexys4ddr
 	  .uart_cts       (uart_cts),
 	  .uart_rts       (uart_rts),
 	  .error          (error),
+	  .logic_rst      (logic_rst),
 	  .fifo_in_data   (in_data),
 	  .fifo_in_valid  (in_valid),
 	  .fifo_in_ready  (in_ready),

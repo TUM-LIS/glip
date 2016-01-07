@@ -30,6 +30,8 @@
 #include "glip-protected.h"
 
 #include "backend_uart.h"
+#include <cbuf.h>
+#include <util.h>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -39,10 +41,25 @@
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <sys/time.h>
+#include <stdio.h>
 
 static int speed_lookup(int speed);
+static int check_timeout(struct timeval *start, unsigned long ms);
+static int read_blocking(int fd, uint8_t *buffer, size_t size, size_t *size_read, unsigned int timeout);
+static int write_blocking(int fd, uint8_t *buffer, size_t size, size_t *size_written, unsigned int timeout);
+static int reset_logic(int fd, uint8_t state);
+
+static void update_debt(struct glip_backend_ctx* ctx, uint8_t first, uint8_t second);
+static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche);
+
+static void reset(struct glip_backend_ctx* ctx);
+
+void* thread_func(void *arg);
+
+static const uint16_t UART_MAX_TRANCHE = 0x3fff;
 
 /**
  * GLIP backend context for the JTAG backend
@@ -51,6 +68,18 @@ struct glip_backend_ctx {
 	char *device;
 	int fd;
 	uint32_t speed;
+	size_t debt;
+	size_t credit;
+
+	pthread_t thread;
+
+	size_t buffer_size;
+
+	struct cbuf *input_buffer;
+	struct cbuf *output_buffer;
+
+	// Communication for the reset
+	volatile int reset_request;
 };
 
 /**
@@ -81,6 +110,13 @@ int gb_uart_new(struct glip_ctx *ctx)
 	ctx->backend_functions.get_channel_count = gb_uart_get_channel_count;
 
 	ctx->backend_ctx = c;
+
+	c->buffer_size = 32768;
+	cbuf_init(&c->input_buffer, c->buffer_size);
+	cbuf_init(&c->output_buffer, c->buffer_size);
+
+	c->credit = c->buffer_size - 1;
+	c->debt = 0;
 
 	return 0;
 }
@@ -139,37 +175,111 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
 	cfsetispeed (&tty, baud);
 
 	// 8N1
-    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
-    tty.c_cflag &= ~(PARENB | PARODD);
-    tty.c_cflag &= ~CSTOPB;
+	tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
+	tty.c_cflag &= ~(PARENB | PARODD);
+	tty.c_cflag &= ~CSTOPB;
 	// Hardware flow control
-    tty.c_cflag |= (CLOCAL | CREAD);
-    tty.c_cflag |= CRTSCTS;
+	tty.c_cflag |= (CLOCAL | CREAD);
+	tty.c_cflag |= CRTSCTS;
 
-    tty.c_cc[VMIN]  = 0; // read doesn't block
-    tty.c_cc[VTIME] = 5; // 0.5 seconds read timeout
+	tty.c_cc[VMIN]  = 0; // read doesn't block
+	tty.c_cc[VTIME] = 5; // 0.5 seconds read timeout
 
 	// Raw
-	tty.c_lflag = 0;
 	tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-	tty.c_iflag &= ~IGNBRK;
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+	tty.c_iflag = 0;
 
-    tty.c_oflag = 0;
+	tty.c_oflag = 0;
 
 	if (tcsetattr (bctx->fd, TCSANOW, &tty) != 0)
 	{
-		err(ctx, "Cannot set attributes");
+		err(ctx, "Cannot set attributes\n");
 		return -1;
 	}
 
-	// Drain the interface
-	int rv;
-	uint8_t buffer[16];
+	int autodetect = 0;
+	int autodetect_candidates[] = { 9600, 19200, 38400, 57600, 115200,
+			230400, 500000, 1000000, 2000000, 3000000, 4000000, 0};
+	int *autodetect_try;
+	int success = 0;
+
 	do {
-		rv = read(bctx->fd, buffer, 16);
-	} while (rv > 0);
+		if (autodetect) {
+			err(ctx, "Try speed: %d\n", *autodetect_try);
+
+			memset (&tty, 0, sizeof tty);
+			if (tcgetattr (bctx->fd, &tty) != 0)
+			{
+				err(ctx, "Cannot get device attributes\n");
+				return -1;
+			}
+
+			bctx->speed = *autodetect_try;
+
+			baud = speed_lookup(bctx->speed);
+			cfsetospeed (&tty, baud);
+			cfsetispeed (&tty, baud);
+
+			if (tcsetattr (bctx->fd, TCSANOW, &tty) != 0)
+			{
+				err(ctx, "Cannot set attributes\n");
+				return -1;
+			}
+		}
+
+		// Set system reset pin to high
+		if (reset_logic(bctx->fd, 1) != 0) {
+			err(ctx, "Cannot send assert reset\n");
+			return -1;
+		}
+
+		// Drain the interface
+		int rv;
+		uint8_t buffer[16];
+		do {
+			rv = read(bctx->fd, buffer, 16);
+		} while (rv > 0);
+
+		// Set system reset pin to low
+		if (reset_logic(bctx->fd, 0) != 0) {
+			err(ctx, "Cannot send de-assert reset\n");
+			return -1;
+		}
+
+		// Read the credit (=debt), just to check read, will reset below
+		uint8_t credit[2];
+		size_t size_read;
+
+		rv = read_blocking(bctx->fd, credit, 2, &size_read, 1000);
+		if (rv == -ETIMEDOUT) {
+			success = 0;
+		} else if ((credit[0] != 0xfe) && (credit[1] != 0xfe)) {
+			success = 0;
+		} else {
+			success = 1;
+		}
+
+		if (!success) {
+			if (!autodetect) {
+				err(ctx, "Given speed %d did not work with device. Try autodetect..\n", bctx->speed);
+//				return -1;
+				autodetect = 1;
+				autodetect_try = autodetect_candidates;
+				continue;
+			} else {
+				autodetect_try++;
+				if (*autodetect_try == 0) {
+					err(ctx, "Could not autodetect baud rate.\n");
+					return -1;
+				}
+			}
+		}
+	} while (!success);
+
+	reset(bctx);
+
+	pthread_create(&bctx->thread, 0, thread_func, bctx);
 
 	return 0;
 }
@@ -186,7 +296,11 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
  */
 int gb_uart_close(struct glip_ctx *ctx)
 {
+	int rv;
 	struct glip_backend_ctx *bctx = ctx->backend_ctx;
+
+	pthread_cancel(bctx->thread);
+	pthread_join(bctx->thread, (void**)&rv);
 
 	close(bctx->fd);
 
@@ -195,14 +309,21 @@ int gb_uart_close(struct glip_ctx *ctx)
 
 /**
  * Reset the logic on the target
- *
- * Not supported as no out-of-band availability
- *
+ * *
  * @see glip_logic_reset()
- * @todo Implement in-band?
  */
 int gb_uart_logic_reset(struct glip_ctx *ctx)
 {
+	int rv;
+
+	struct glip_backend_ctx *bctx = ctx->backend_ctx;
+
+	assert(bctx->reset_request == 0);
+
+	bctx->reset_request = 1;
+
+	while (bctx->reset_request == 1) {}
+
 	return 0;
 }
 
@@ -223,26 +344,22 @@ int gb_uart_logic_reset(struct glip_ctx *ctx)
 int gb_uart_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 		uint8_t *data, size_t *size_read)
 {
-	int rv;
+	assert(channel == 0);
 
-	if (channel != 0) {
-		err(ctx, "Only channel 0 supported");
-		return -1;
-	}
+    struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-	struct glip_backend_ctx* bctx = ctx->backend_ctx;
+    size_t fill_level = cbuf_fill_level(bctx->input_buffer);
+    size_t size_read_req = min(fill_level, size);
 
-	do {
-		rv = read(bctx->fd, data, size);
-	} while ((rv == -1) && (errno == EAGAIN));
+    int rv = cbuf_read(bctx->input_buffer, data, size_read_req);
+    if (rv < 0) {
+        err(ctx, "Unable to get data from read buffer, rv = %d\n", rv);
+        return -1;
+    }
 
-	if (rv >= 0) {
-		*size_read = rv;
-		return 0;
-	} else {
-		*size_read = 0;
-		return errno;
-	}
+    *size_read = size_read_req;
+
+    return 0;
 }
 
 /**
@@ -264,47 +381,54 @@ int gb_uart_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 		uint8_t *data, size_t *size_read, unsigned int timeout)
 {
-	//return gb_uart_read(ctx, channel, size, data, size_read);
-	struct timeval tval_start, tval_current, tval_diff;
-	int rv;
+    int rv;
+    struct glip_backend_ctx *bctx = ctx->backend_ctx;
+    struct timespec ts;
 
-	struct glip_backend_ctx* bctx = ctx->backend_ctx;
+    if (size > bctx->buffer_size) {
+        /*
+         * This is not a problem for non-blocking reads, but blocking reads will
+         * block forever in this case as the maximum amount of data ever
+         * available is limited by the buffer size.
+         */
+        err(ctx, "The read size cannot be larger than %u bytes.", bctx->buffer_size);
+        return -1;
+    }
 
-	*size_read = 0;
+    if (timeout != 0) {
+        clock_gettime(CLOCK_REALTIME, &ts);
+        timespec_add_ns(&ts, timeout * 1000 * 1000);
+    }
 
-	if (timeout > 0) {
-		gettimeofday(&tval_start, NULL);
-	}
+    /*
+     * Wait until sufficient data is available to be read.
+     */
+    if (timeout != 0) {
+        clock_gettime(CLOCK_REALTIME, &ts);
+        timespec_add_ns(&ts, timeout * 1000 * 1000);
+    }
+    while (cbuf_fill_level(bctx->input_buffer) < size) {
+        if (timeout == 0) {
+            rv = cbuf_wait_for_level_change(bctx->input_buffer);
+        } else {
+            rv = cbuf_timedwait_for_level_change(bctx->input_buffer, &ts);
+        }
 
-	do {
-		rv = read(bctx->fd, &data[*size_read], size - *size_read);
+        if (rv != 0) {
+            break;
+        }
+    }
 
-		if (rv >= 0) {
-			*size_read += rv;
-		}
-
-		if ((rv == -1) && (errno != EAGAIN)) {
-			return errno;
-		}
-
-		if (timeout > 0) {
-			gettimeofday(&tval_current, NULL);
-			tval_diff.tv_sec = tval_current.tv_sec - tval_start.tv_sec;
-			tval_diff.tv_usec = tval_current.tv_usec - tval_start.tv_usec;
-			if (tval_current.tv_usec < tval_start.tv_usec) {
-				tval_diff.tv_sec -= 1;
-			}
-			if (tval_current.tv_usec < 0) {
-				tval_current.tv_usec += 1000000;
-			}
-
-			if (tval_diff.tv_usec > (timeout * 1000)) {
-				return -ETIMEDOUT;
-			}
-		}
-	} while(*size_read != size);
-
-	return 0;
+    /*
+     * We read whatever data is available, and assume a timeout if the available
+     * amount of data does not match the requested amount.
+     */
+    *size_read = 0;
+    rv = gb_uart_read(ctx, channel, size, data, size_read);
+    if (rv == 0 && size != *size_read) {
+        return -ETIMEDOUT;
+    }
+    return rv;
 }
 
 /**
@@ -324,26 +448,15 @@ int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 int gb_uart_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 		uint8_t *data, size_t *size_written)
 {
-	int rv;
+	assert(channel == 0);
+    struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-	if (channel != 0) {
-		err(ctx, "Only channel 0 supported");
-		return -1;
-	}
+    unsigned int buf_size_free = cbuf_free_level(bctx->output_buffer);
+    *size_written = (size > buf_size_free ? buf_size_free : size);
 
-	struct glip_backend_ctx* bctx = ctx->backend_ctx;
+    cbuf_write(bctx->output_buffer, data, *size_written);
 
-	do {
-		rv = write(bctx->fd, data, size);
-	} while((rv == -1) && (errno = EAGAIN));
-
-	if (rv >= 0) {
-		*size_written = rv;
-		return 0;
-	} else {
-		*size_written = 0;
-		return errno;
-	}
+    return 0;
 }
 
 /**
@@ -365,46 +478,44 @@ int gb_uart_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 int gb_uart_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 		uint8_t *data, size_t *size_written, unsigned int timeout)
 {
-	struct timeval tval_start, tval_current, tval_diff;
 	int rv;
 
-	struct glip_backend_ctx* bctx = ctx->backend_ctx;
+	assert(channel == 0);
 
-	*size_written = 0;
+    struct glip_backend_ctx* bctx = ctx->backend_ctx;
+    struct timespec ts;
 
-	if (timeout > 0) {
-		gettimeofday(&tval_start, NULL);
-	}
+    if (timeout != 0) {
+        clock_gettime(CLOCK_REALTIME, &ts);
+        timespec_add_ns(&ts, timeout * 1000 * 1000);
+    }
 
-	do {
-		rv = write(bctx->fd, &data[*size_written], size - *size_written);
+    size_t size_done = 0;
+    while (1) {
+        size_t size_done_tmp = 0;
+        gb_uart_write(ctx, channel, size - size_done, &data[size_done],
+                            &size_done_tmp);
+        size_done += size_done_tmp;
 
-		if (rv >= 0) {
-			*size_written += rv;
-		}
+        if (size_done == size) {
+            break;
+        }
 
-		if ((rv == -1) && (errno != EAGAIN)) {
-			return errno;
-		}
+        if (cbuf_free_level(bctx->output_buffer) == 0) {
+            if (timeout == 0) {
+                cbuf_wait_for_level_change(bctx->output_buffer);
+            } else {
+                cbuf_timedwait_for_level_change(bctx->output_buffer, &ts);
+            }
+        }
+    }
 
-		if (timeout > 0) {
-			gettimeofday(&tval_current, NULL);
-			tval_diff.tv_sec = tval_current.tv_sec - tval_start.tv_sec;
-			tval_diff.tv_usec = tval_current.tv_usec - tval_start.tv_usec;
-			if (tval_current.tv_usec < tval_start.tv_usec) {
-				tval_diff.tv_sec -= 1;
-			}
-			if (tval_current.tv_usec < 0) {
-				tval_current.tv_usec += 1000000;
-			}
+    *size_written = size_done;
+    if (size != *size_written) {
+        return -ETIMEDOUT;
+    }
 
-			if (tval_diff.tv_usec > (timeout * 1000)) {
-				return -ETIMEDOUT;
-			}
-		}
-	} while(*size_written != size);
-
-	return 0;
+    return 0;
 }
 
 /**
@@ -469,4 +580,230 @@ static int speed_lookup(int speed) {
 	KNOWN(4000000);
 	default: return -1;
 	}
+}
+
+static int reset_logic(int fd, uint8_t state) {
+	uint8_t reset[2];
+	size_t written;
+	int rv;
+
+	reset[0] = 0xfe;
+	reset[1] = ((state & 0x1) << 1) | 0x81;
+
+	return write_blocking(fd, reset, 2, &written, 0);
+}
+
+void* thread_func(void *arg) {
+	uint8_t buffer[4];
+	size_t actual;
+	int rv;
+
+	struct glip_backend_ctx *ctx = (struct glip_backend_ctx*) arg;
+
+	unsigned int cnt = 0;
+
+	while (1) {
+		// Check for reset
+		if (ctx->reset_request == 1) {
+			printf("Reset requested\n");
+			reset(ctx);
+			ctx->reset_request = 0;
+		}
+
+		// Read
+		if (read(ctx->fd, buffer, 1) == 1) {
+			cnt++;
+			//if (cnt %100 == 0)
+			{ printf("%02x, cnt: %d\n", buffer[0], cnt); }
+			if (buffer[0] == 0xfe) {
+				rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
+				assert(rv == 0);
+				assert(actual == 1);
+				if (buffer[0] == 0xfe) {
+					assert(ctx->credit > 0);
+					rv = cbuf_write(ctx->input_buffer, buffer, 1);
+					assert(rv == 0);
+					ctx->credit--;
+				} else {
+					rv = read_blocking(ctx->fd, &buffer[1], 1, &actual, 0);
+					assert(rv == 0);
+					assert(actual == 1);
+					update_debt(ctx, buffer[0], buffer[1]);
+				}
+			} else {
+				assert(ctx->credit > 0);
+				rv = cbuf_write(ctx->input_buffer, buffer, 1);
+				assert(rv == 0);
+				ctx->credit--;
+			}
+		}
+
+		// Write
+		if (ctx->debt > 0) {
+			if (cbuf_read(ctx->output_buffer, buffer, 1) != -EINVAL) {
+				printf("Write: %02x\n", buffer[0]);
+				do {
+					rv = write(ctx->fd, buffer, 1);
+				} while (rv != 1);
+				ctx->debt--;
+			}
+		}
+
+		// Update credit if necessary
+		if (ctx->credit < ctx->buffer_size-UART_MAX_TRANCHE) {
+			// Give new credit
+			ctx->credit += UART_MAX_TRANCHE;
+
+			send_credit(ctx, UART_MAX_TRANCHE);
+		}
+	}
+
+	return 0;
+}
+
+static int read_blocking(int fd, uint8_t *buffer, size_t size,
+		size_t *size_read, unsigned int timeout) {
+	struct timeval tval_start;
+	int rv;
+
+	*size_read = 0;
+
+	if (timeout > 0) {
+		gettimeofday(&tval_start, NULL);
+	}
+
+	do {
+		rv = read(fd, &buffer[*size_read], size - *size_read);
+
+		if (rv >= 0) {
+			*size_read += rv;
+		}
+
+		if ((rv == -1) && (errno != EAGAIN)) {
+			return errno;
+		}
+
+		if (timeout > 0) {
+			if (check_timeout(&tval_start, timeout)) {
+				return -ETIMEDOUT;
+			}
+		}
+	} while(*size_read != size);
+
+	return 0;
+}
+
+static int write_blocking(int fd, uint8_t *buffer, size_t size,
+		size_t *size_written, unsigned int timeout) {
+	struct timeval tval_start;
+	int rv;
+
+	*size_written = 0;
+
+	if (timeout > 0) {
+		gettimeofday(&tval_start, NULL);
+	}
+
+	do {
+		rv = write(fd, &buffer[*size_written], size - *size_written);
+
+		if (rv >= 0) {
+			*size_written += rv;
+		}
+
+		if ((rv == -1) && (errno != EAGAIN)) {
+			return errno;
+		}
+
+		if (timeout > 0) {
+			if (check_timeout(&tval_start, timeout)) {
+				return -ETIMEDOUT;
+			}
+		}
+	} while(*size_written != size);
+
+	return 0;
+}
+
+static int check_timeout(struct timeval *start, unsigned long ms) {
+	struct timeval tval_current, tval_diff;
+	gettimeofday(&tval_current, NULL);
+
+	tval_diff.tv_sec = tval_current.tv_sec - start->tv_sec;
+	tval_diff.tv_usec = tval_current.tv_usec - start->tv_usec;
+
+	if (tval_current.tv_usec < start->tv_usec) {
+		tval_diff.tv_sec += 1;
+		tval_diff.tv_usec += 1000000;
+	}
+
+	if ((tval_diff.tv_sec * 1000000 + tval_diff.tv_usec)
+			> (ms * 1000)) {
+		return -ETIMEDOUT;
+	}
+
+	return 0;
+}
+
+static void update_debt(struct glip_backend_ctx* ctx, uint8_t first,
+		uint8_t second) {
+	printf("Update debt: %d->", ctx->debt);
+	ctx->debt += (((first >> 1) & 0x7f) << 8) | second;
+	printf("%d\n", ctx->debt);
+}
+
+static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche) {
+	uint8_t credit[3];
+	size_t written;
+
+	printf("Send credit tranche: %d, credit: %d\n", tranche, ctx->credit);
+
+	credit[0] = 0xfe;
+	credit[1] = 0x1 | ((tranche >> 8) << 1);
+	credit[2] = tranche & 0xff;
+
+	if (write_blocking(ctx->fd, credit, 3, &written, 0) != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static void reset(struct glip_backend_ctx* ctx) {
+	int rv;
+
+	rv = reset_logic(ctx->fd, 1);
+	assert(rv == 0);
+
+	rv = reset_logic(ctx->fd, 0);
+	assert(rv == 0);
+
+	rv = cbuf_discard(ctx->input_buffer, cbuf_fill_level(ctx->input_buffer));
+	assert(rv == 0);
+
+	rv = cbuf_discard(ctx->output_buffer, cbuf_fill_level(ctx->output_buffer));
+	assert(rv == 0);
+
+	ctx->credit = UART_MAX_TRANCHE;
+	send_credit(ctx, UART_MAX_TRANCHE);
+
+	ctx->debt = 0;
+	uint8_t credit[3];
+	size_t read;
+	rv = read_blocking(ctx->fd, credit, 3, &read, 0);
+	assert(rv == 0);
+
+	// Strangely, the UART sometimes returns a trash byte on the first
+	// access after the bitstream was loaded. Ignore this.
+	if (credit[0] != 0xfe) {
+		credit[0] = credit[1];
+		credit[1] = credit[2];
+
+		rv = read_blocking(ctx->fd, &credit[2], 1, &read, 0);
+		assert(rv == 0);
+	}
+
+	assert(credit[0] == 0xfe);
+
+	update_debt(ctx, credit[1], credit[2]);
 }
