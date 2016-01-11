@@ -92,8 +92,13 @@ set files [list \
  "[file normalize "$origin_dir/nexys4ddr.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/nexys4ddr/nexys4ddr_display.v"]"\
  "[file normalize "$origin_dir/../../verilog/glip_uart_toplevel.v"]"\
+ "[file normalize "$origin_dir/../../verilog/glip_uart_control.v"]"\
+ "[file normalize "$origin_dir/../../verilog/glip_uart_control_egress.v"]"\
+ "[file normalize "$origin_dir/../../verilog/glip_uart_control_ingress.v"]"\
  "[file normalize "$origin_dir/../../verilog/glip_uart_receive.v"]"\
  "[file normalize "$origin_dir/../../verilog/glip_uart_transmit.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/credit/verilog/creditor.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/credit/verilog/debtor.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/bcdcounter/bcdcounter.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/sevensegment/sevensegment.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/measure/glip_measure_sevensegment.v"]"\

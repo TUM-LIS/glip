@@ -104,6 +104,8 @@ module nexys4ddr
       end
    end
 
+   wire logic_rst;
+
    glip_uart_toplevel
      #(.FREQ(FREQ),
        .BAUD(BAUD))
@@ -115,6 +117,8 @@ module nexys4ddr
 	  .uart_cts       (uart_cts),
 	  .uart_rts       (uart_rts),
 	  .error          (error),
+	  .logic_rst      (logic_rst),
+	  .com_rst        (com_rst),
 	  .fifo_in_data   (in_data),
 	  .fifo_in_valid  (in_valid),
 	  .fifo_in_ready  (in_ready),
@@ -128,7 +132,7 @@ module nexys4ddr
    glip_measure_sevensegment
      #(.FREQ(FREQ), .DIGITS(8), .OFFSET(0), .STEP(4'd1))
      u_measure(.clk      (clk),
-	       .rst      (rst),
+	       .rst      (logic_rst),
 	       .trigger  ((in_valid & in_ready) | (out_valid & out_ready)),
 	       .digits   (digits),
 	       .overflow (overflow));
@@ -136,7 +140,7 @@ module nexys4ddr
    nexys4ddr_display
      #(.FREQ(FREQ))
    u_display(.clk       (clk),
-	     .rst       (rst),
+	     .rst       (logic_rst),
 	     .digits    (digits),
 	     .decpoints (8'b00001000),
 	     .CA        (CA),
