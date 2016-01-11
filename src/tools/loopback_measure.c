@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 
     uint8_t data[WRITE_BLOCK_SIZE];
     for (size_t i = 0; i < WRITE_BLOCK_SIZE; i++) {
-        data[i] = i % (UINT8_MAX + 1);
+        data[i] = i % 256;
     }
     while (current_sent < transfer_size) {
         size_t size_written;
@@ -321,8 +321,8 @@ void* read_from_target(void* ctx_void)
                 exit_measurement(1);
             }
             byte++;
-            data_exp = (data_exp + 1) % ((UINT8_MAX + 1) > WRITE_BLOCK_SIZE ?
-                                         WRITE_BLOCK_SIZE : (UINT8_MAX + 1));
+            data_exp = (data_exp + 1) % (WRITE_BLOCK_SIZE < 256 ?
+                                         WRITE_BLOCK_SIZE : 256);
         }
 
         /* done! */
