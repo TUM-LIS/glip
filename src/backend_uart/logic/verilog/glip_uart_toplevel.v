@@ -76,6 +76,9 @@ module glip_uart_toplevel
    wire [7:0] 	  ingress_out_data;
    wire 	  ingress_out_valid;
    wire 	  ingress_out_ready;   
+   wire [7:0] 	  ingress_buffer_data;
+   wire 	  ingress_buffer_valid;
+   wire 	  ingress_buffer_ready;
    wire [7:0] 	  egress_in_data;
    wire 	  egress_in_valid;
    wire 	  egress_in_ready;
@@ -83,12 +86,19 @@ module glip_uart_toplevel
    wire 	  egress_out_enable;
    wire 	  egress_out_done;   
 
+   wire 	  transfer_in;
+   assign transfer_in = ingress_buffer_valid & ingress_buffer_ready;
+
    // Map FIFO signals to flow control
-   wire 	  in_fifo_almostfull;
+   wire 	  in_fifo_full;
    wire 	  in_fifo_empty;
+   wire 	  in_buffer_almost_full;
+   wire 	  in_buffer_empty;
    wire 	  out_fifo_full;
    wire 	  out_fifo_empty;
-   assign ingress_out_ready = ~in_almost_full;
+   assign ingress_out_ready = ~in_buffer_almost_full;
+   assign ingress_buffer_valid = ~in_buffer_empty;
+   assign ingress_buffer_ready = ~in_fifo_full;
    assign fifo_in_valid = ~in_fifo_empty;
    assign egress_in_valid = ~out_fifo_empty;
    assign fifo_out_ready = ~out_fifo_full;
@@ -112,8 +122,8 @@ module glip_uart_toplevel
     .error (control_error),
     ); */
    (* dont_touch = "true" *) glip_uart_control
-     #(.FIFO_CREDIT_WIDTH(11),
-       .INPUT_FIFO_CREDIT(2000),
+     #(.FIFO_CREDIT_WIDTH(12),
+       .INPUT_FIFO_CREDIT(4090),
        .FREQ(FREQ))
    u_control(/*AUTOINST*/
 	     // Outputs
@@ -134,7 +144,8 @@ module glip_uart_toplevel
 	     .ingress_out_ready		(ingress_out_ready),
 	     .egress_in_data		(egress_in_data[7:0]),
 	     .egress_in_valid		(egress_in_valid),
-	     .egress_out_done		(egress_out_done));
+	     .egress_out_done		(egress_out_done),
+	     .transfer_in		(transfer_in));
    
    /* glip_uart_receive AUTO_TEMPLATE(
     .clk (clk_io),
@@ -174,6 +185,33 @@ module glip_uart_toplevel
 	      .rst			(com_rst),		 // Templated
 	      .data			(egress_out_data[7:0]),	 // Templated
 	      .enable			(egress_out_enable & ~uart_cts)); // Templated
+
+   // Buffer uart -> logic
+   FIFO_DUALCLOCK_MACRO
+     #(.ALMOST_FULL_OFFSET(9'h006), // Sets almost full threshold
+       .DATA_WIDTH(8), // Valid values are 1-72 (37-72 only valid when FIFO_SIZE="36Kb")
+       .DEVICE(XILINX_TARGET_DEVICE), // Target device: "VIRTEX5", "VIRTEX6", "7SERIES"
+       .FIFO_SIZE("36Kb"), // Target BRAM: "18Kb" or "36Kb"
+       .FIRST_WORD_FALL_THROUGH("TRUE") // Sets the FIfor FWFT to "TRUE" or "FALSE"
+       )
+   in_buffer
+     (.ALMOSTEMPTY (),
+      .ALMOSTFULL  (in_buffer_almost_full),
+      .DO          (ingress_buffer_data[7:0]),
+      .EMPTY       (in_buffer_empty),
+      .FULL        (),
+      .RDCOUNT     (),
+      .RDERR       (),
+      .WRCOUNT     (),
+      .WRERR       (),
+      .DI          (ingress_out_data[7:0]),
+      .RDCLK       (clk_io),
+      .RDEN        (ingress_buffer_ready),
+      .RST         (com_rst),
+      .WRCLK       (clk_io),
+      .WREN        (ingress_out_valid)
+      );
+
    
    // Clock domain crossing uart -> logic
    FIFO_DUALCLOCK_MACRO
@@ -186,7 +224,7 @@ module glip_uart_toplevel
        )
    in_fifo
      (.ALMOSTEMPTY (),
-      .ALMOSTFULL  (in_almost_full),
+      .ALMOSTFULL  (),
       .DO          (fifo_in_data[7:0]),
       .EMPTY       (in_fifo_empty),
       .FULL        (in_fifo_full),
@@ -194,12 +232,12 @@ module glip_uart_toplevel
       .RDERR       (),
       .WRCOUNT     (),
       .WRERR       (),
-      .DI          (ingress_out_data[7:0]),
+      .DI          (ingress_buffer_data[7:0]),
       .RDCLK       (clk_logic),
       .RDEN        (fifo_in_ready),
       .RST         (com_rst),
       .WRCLK       (clk_io),
-      .WREN        (ingress_out_valid)
+      .WREN        (ingress_buffer_valid)
       );
    
    // Clock domain crossing logic -> uart

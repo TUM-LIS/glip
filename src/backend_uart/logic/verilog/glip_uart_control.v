@@ -51,6 +51,8 @@ module glip_uart_control
     output 	 egress_out_enable,
     input 	 egress_out_done,
 
+    input 	 transfer_in,
+
     output reg 	 logic_rst,
     output reg 	 com_rst,
     output 	 error
@@ -59,7 +61,6 @@ module glip_uart_control
    wire [3:0] 	     mod_error; 	     
 
    wire 	     transfer_egress;
-   wire 	     transfer_ingress;
 
    wire 	     can_send;
    wire [13:0] 	     debt;
@@ -119,7 +120,7 @@ module glip_uart_control
 	 end // else: !if(get_credit)
 
 	 if (transfer_counter != 0) begin
-	    if (transfer_ingress) begin
+	    if (transfer_in) begin
 	       nxt_transfer_counter = transfer_counter - 1;
 	    end
 	 end
@@ -130,7 +131,7 @@ module glip_uart_control
             nxt_get_credit = 1;
          end
 
-	 if (transfer_ingress) begin
+	 if (transfer_in) begin
 	    nxt_transfer_counter = nxt_transfer_counter - 1;
 	 end
       end
@@ -173,7 +174,7 @@ module glip_uart_control
 
    /* creditor AUTO_TEMPLATE(
     .rst     (com_rst),
-    .payback (transfer_ingress),
+    .payback (transfer_in),
     .borrow  (get_credit),
     .grant   (get_credit_ack),
     .error   (mod_error[2]),
@@ -190,7 +191,7 @@ module glip_uart_control
 	      // Inputs
 	      .clk			(clk),
 	      .rst			(com_rst),		 // Templated
-	      .payback			(transfer_ingress),	 // Templated
+	      .payback			(transfer_in),		 // Templated
 	      .borrow			(get_credit));		 // Templated
    
    /* glip_uart_control_egress AUTO_TEMPLATE(
@@ -225,7 +226,7 @@ module glip_uart_control
     .out_\(.*\) (ingress_out_\1),
     .credit_val (debt),
     .credit_en  (debt_en),
-    .transfer   (transfer_ingress),
+    .transfer   (),
     .error      (mod_error[0]),
     .rst_en     (ctrl_rst_en),
     .rst_val    (ctrl_rst_val),
@@ -236,7 +237,7 @@ module glip_uart_control
 	       .in_ready		(ingress_in_ready),	 // Templated
 	       .out_data		(ingress_out_data),	 // Templated
 	       .out_valid		(ingress_out_valid),	 // Templated
-	       .transfer		(transfer_ingress),	 // Templated
+	       .transfer		(),			 // Templated
 	       .credit_en		(debt_en),		 // Templated
 	       .credit_val		(debt),			 // Templated
 	       .logic_rst_en		(logic_rst_en),
