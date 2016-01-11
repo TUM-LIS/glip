@@ -121,7 +121,7 @@ module glip_uart_toplevel
     .clk   (clk_io),
     .error (control_error),
     ); */
-   (* dont_touch = "true" *) glip_uart_control
+   glip_uart_control
      #(.FIFO_CREDIT_WIDTH(12),
        .INPUT_FIFO_CREDIT(4090),
        .FREQ(FREQ))
