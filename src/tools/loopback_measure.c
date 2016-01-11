@@ -38,11 +38,13 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <assert.h>
 
 /* default value for the --transfer-size argument (10 MB) */
 #define TRANSFER_SIZE_DEFAULT (10*1024*1024)
 
-/* write block size in bytes */
+/* write block size in bytes,
+ * can be any number smaller 256 or multiples of 256 */
 #define WRITE_BLOCK_SIZE 6
 /* read block size in bytes */
 #define READ_BLOCK_SIZE 2048
@@ -140,6 +142,8 @@ int main(int argc, char *argv[])
     size_t num_backend_options = 0;
     use_blocking_functions = 1;
 
+    assert((WRITE_BLOCK_SIZE < 256) || (WRITE_BLOCK_SIZE % 256 == 0));
+
     while (1) {
         static struct option long_options[] = {
             {"help",            no_argument,       0, 'h'},
@@ -232,7 +236,7 @@ int main(int argc, char *argv[])
 
     uint8_t data[WRITE_BLOCK_SIZE];
     for (size_t i = 0; i < WRITE_BLOCK_SIZE; i++) {
-        data[i] = i % UINT8_MAX;
+        data[i] = i % 256;
     }
     while (current_sent < transfer_size) {
         size_t size_written;
@@ -317,8 +321,8 @@ void* read_from_target(void* ctx_void)
                 exit_measurement(1);
             }
             byte++;
-            data_exp = (data_exp + 1) % (UINT8_MAX > WRITE_BLOCK_SIZE ?
-                                         WRITE_BLOCK_SIZE : UINT8_MAX);
+            data_exp = (data_exp + 1) % (WRITE_BLOCK_SIZE < 256 ?
+                                         WRITE_BLOCK_SIZE : 256);
         }
 
         /* done! */
