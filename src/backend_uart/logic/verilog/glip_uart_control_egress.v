@@ -124,7 +124,6 @@ module glip_uart_control_egress
 	   out_data = 8'hfe;
 	   out_enable = can_send;
 	   if (out_done) begin
-	      in_ready = 1'b1;
 	      nxt_state = STATE_IDLE;
 	   end
 	end
