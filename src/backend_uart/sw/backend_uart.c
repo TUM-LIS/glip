@@ -52,6 +52,17 @@ static int read_blocking(int fd, uint8_t *buffer, size_t size, size_t *size_read
 static int write_blocking(int fd, uint8_t *buffer, size_t size, size_t *size_written, unsigned int timeout);
 static int reset_logic(int fd, uint8_t state);
 
+/**
+ * Reset the communication logic
+ *
+ * Sets the communication logic register
+ *
+ * @param fd Terminal to use
+ * @param state Value (binary) to set the register to
+ * @return Always returns 0
+ */
+static int reset_com(int fd, uint8_t state);
+
 static void update_debt(struct glip_backend_ctx* ctx, uint8_t first, uint8_t second);
 static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche);
 
@@ -59,7 +70,22 @@ static void reset(struct glip_backend_ctx* ctx);
 
 void* thread_func(void *arg);
 
+/**
+ * Parses an incoming buffer and filters credits
+ *
+ * Filter and process credits, write data otherwise
+ *
+ * @param ctx Context
+ * @param buffer Buffer to parse
+ * @param size Size of the buffer
+ */
+void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer,
+		size_t size);
+
 static const uint16_t UART_MAX_TRANCHE = 0x3fff;
+
+/*! Temporary buffer size */
+static const uint16_t TMP_BUFFER_SIZE = 256;
 
 /**
  * GLIP backend context for the JTAG backend
@@ -228,24 +254,16 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
 			}
 		}
 
-		// Set system reset pin to high
-		if (reset_logic(bctx->fd, 1) != 0) {
-			err(ctx, "Cannot send assert reset\n");
-			return -1;
-		}
-
-		// Drain the interface
 		int rv;
-		uint8_t buffer[16];
+		rv = reset_com(bctx->fd, 1);
+
+		usleep(1000);
 		do {
-			rv = read(bctx->fd, buffer, 16);
+			uint8_t buffer[128];
+			rv = read(bctx->fd, buffer, 128);
 		} while (rv > 0);
 
-		// Set system reset pin to low
-		if (reset_logic(bctx->fd, 0) != 0) {
-			err(ctx, "Cannot send de-assert reset\n");
-			return -1;
-		}
+		rv = reset_com(bctx->fd, 0);
 
 		// Read the credit (=debt), just to check read, will reset below
 		uint8_t credit[2];
@@ -593,59 +611,128 @@ static int reset_logic(int fd, uint8_t state) {
 	return write_blocking(fd, reset, 2, &written, 0);
 }
 
+static int reset_com(int fd, uint8_t state) {
+	uint8_t reset[2];
+	size_t written;
+
+	reset[0] = 0xfe;
+	reset[1] = ((state & 0x1) << 1) | 0x85;
+
+	return write_blocking(fd, reset, 2, &written, 0);
+}
+
+void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer, size_t size) {
+	size_t actual, i;
+	int rv;
+
+	for (i = 0; i < size; i++) {
+		if (buffer[i] == 0xfe) {
+			// Check if next item is already in buffer
+			if ((i + 1) < size) {
+				if (buffer[i+1] == 0xfe) {
+					// If this is the data word, write it
+					assert(ctx->credit > 0);
+					rv = cbuf_write(ctx->input_buffer, &buffer[i], 1);
+					assert(rv == 0);
+					ctx->credit--;
+				} else {
+					// This is the first of the credit message
+					// Check if the next is also in buffer
+					if ((i + 2) < size) {
+						update_debt(ctx, buffer[i+1], buffer[i+2]);
+						// Increment the counter for the second extra word
+						i++;
+					} else {
+						// We have reached the end of the buffer, it is
+						// safe to use the begin of buffer for the credit
+						rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
+						assert(rv == 0);
+						update_debt(ctx, buffer[i+1], buffer[0]);
+					}
+				}
+				// Increment the counter for the first extra word
+				i++;
+			} else {
+				// If the next item was not in buffer, read another one,
+				// we can now reuse the buffer
+				rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
+				assert(rv == 0);
+
+				if (buffer[0] == 0xfe) {
+					// That was the data word, write it
+					assert(ctx->credit > 0);
+					rv = cbuf_write(ctx->input_buffer, &buffer[0], 1);
+					assert(rv == 0);
+					ctx->credit--;
+				} else {
+					// We received a credit, read the next
+					rv = read_blocking(ctx->fd, &buffer[1], 1, &actual, 0);
+					assert(rv == 0);
+					update_debt(ctx, buffer[0], buffer[1]);
+				}
+			}
+		} else {
+			// This is a data word
+			assert(ctx->credit > 0);
+			rv = cbuf_write(ctx->input_buffer, &buffer[i], 1);
+			assert(rv == 0);
+			ctx->credit--;
+		}
+	}
+}
+
 void* thread_func(void *arg) {
-	uint8_t buffer[4];
-	size_t actual;
+	uint8_t buffer[TMP_BUFFER_SIZE];
+	size_t avail, actual;
 	int rv;
 
 	struct glip_backend_ctx *ctx = (struct glip_backend_ctx*) arg;
 
-	unsigned int cnt = 0;
-
 	while (1) {
 		// Check for reset
 		if (ctx->reset_request == 1) {
-			printf("Reset requested\n");
-			reset(ctx);
+			rv = reset_logic(ctx->fd, 1);
+			assert(rv == 0);
+
+			rv = reset_logic(ctx->fd, 0);
+			assert(rv == 0);
 			ctx->reset_request = 0;
 		}
 
 		// Read
-		if (read(ctx->fd, buffer, 1) == 1) {
-			cnt++;
-			//if (cnt %100 == 0)
-			{ printf("%02x, cnt: %d\n", buffer[0], cnt); }
-			if (buffer[0] == 0xfe) {
-				rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
+		avail = cbuf_free_level(ctx->input_buffer);
+		if (avail == 0) {
+			// We are only expecting a credit message now
+			// Check if there is one
+			rv = read(ctx->fd, buffer, 1);
+			if (rv == 1) {
+				assert(buffer[0] == 0xfe);
+				rv = read_blocking(ctx->fd, buffer, 2, &actual, 0);
 				assert(rv == 0);
-				assert(actual == 1);
-				if (buffer[0] == 0xfe) {
-					assert(ctx->credit > 0);
-					rv = cbuf_write(ctx->input_buffer, buffer, 1);
-					assert(rv == 0);
-					ctx->credit--;
-				} else {
-					rv = read_blocking(ctx->fd, &buffer[1], 1, &actual, 0);
-					assert(rv == 0);
-					assert(actual == 1);
-					update_debt(ctx, buffer[0], buffer[1]);
-				}
-			} else {
-				assert(ctx->credit > 0);
-				rv = cbuf_write(ctx->input_buffer, buffer, 1);
-				assert(rv == 0);
-				ctx->credit--;
+				assert(actual == 2);
+				update_debt(ctx, buffer[0], buffer[1]);
+			}
+		} else {
+			// Read a chunk of data if the circular buffer can accept it
+			size_t size = min(avail, TMP_BUFFER_SIZE);
+			rv = read(ctx->fd, buffer, size);
+			if (rv > 0) {
+				parse_buffer(ctx, buffer, rv);
 			}
 		}
 
 		// Write
 		if (ctx->debt > 0) {
-			if (cbuf_read(ctx->output_buffer, buffer, 1) != -EINVAL) {
-				printf("Write: %02x\n", buffer[0]);
-				do {
-					rv = write(ctx->fd, buffer, 1);
-				} while (rv != 1);
-				ctx->debt--;
+			size_t size = min(ctx->debt, TMP_BUFFER_SIZE);
+			avail = cbuf_fill_level(ctx->output_buffer);
+			if (avail > 0) {
+				size = min(avail, size);
+
+				assert(cbuf_read(ctx->output_buffer, buffer, size) != -EINVAL);
+				rv = write_blocking(ctx->fd, buffer, size, &actual, 0);
+				assert(rv == 0);
+				assert(actual == size);
+				ctx->debt -= size;
 			}
 		}
 
@@ -747,16 +834,12 @@ static int check_timeout(struct timeval *start, unsigned long ms) {
 
 static void update_debt(struct glip_backend_ctx* ctx, uint8_t first,
 		uint8_t second) {
-	printf("Update debt: %d->", ctx->debt);
 	ctx->debt += (((first >> 1) & 0x7f) << 8) | second;
-	printf("%d\n", ctx->debt);
 }
 
 static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche) {
 	uint8_t credit[3];
 	size_t written;
-
-	printf("Send credit tranche: %d, credit: %d\n", tranche, ctx->credit);
 
 	credit[0] = 0xfe;
 	credit[1] = 0x1 | ((tranche >> 8) << 1);
@@ -769,14 +852,21 @@ static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche) {
 	return 0;
 }
 
-static void reset(struct glip_backend_ctx* ctx) {
+static int reset(struct glip_backend_ctx* ctx) {
 	int rv;
 
-	rv = reset_logic(ctx->fd, 1);
-	assert(rv == 0);
+	rv = reset_com(ctx->fd, 1);
+	if (rv != 0) {
+		return -1;
+	}
 
-	rv = reset_logic(ctx->fd, 0);
-	assert(rv == 0);
+	// Drain the interface
+	uint8_t buffer[16];
+	do {
+		rv = read(ctx->fd, buffer, 16);
+	} while (rv > 0);
+
+	rv = reset_com(ctx->fd, 0);
 
 	rv = cbuf_discard(ctx->input_buffer, cbuf_fill_level(ctx->input_buffer));
 	assert(rv == 0);
@@ -806,4 +896,6 @@ static void reset(struct glip_backend_ctx* ctx) {
 	assert(credit[0] == 0xfe);
 
 	update_debt(ctx, credit[1], credit[2]);
+
+	return 0;
 }

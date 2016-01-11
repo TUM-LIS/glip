@@ -51,7 +51,8 @@ module glip_uart_control
     output 	 egress_out_enable,
     input 	 egress_out_done,
 
-    output 	 logic_rst,
+    output reg 	 logic_rst,
+    output reg 	 com_rst,
     output 	 error
     );
 
@@ -70,10 +71,10 @@ module glip_uart_control
    reg 				get_credit;
    wire 			get_credit_ack;   
    
-   reg 				ctrl_rst;
-   wire 			ctrl_rst_en;
-   wire 			ctrl_rst_val;
-   assign logic_rst = rst | ctrl_rst;
+   wire 			logic_rst_en;
+   wire 			logic_rst_val;
+   wire 			com_rst_en;
+   wire 			com_rst_val;
    
    assign error = |mod_error;
    
@@ -85,7 +86,7 @@ module glip_uart_control
    reg 				nxt_get_credit;
    
    always @(posedge clk) begin
-      if (logic_rst) begin
+      if (rst | com_rst) begin
 	 transfer_counter <= 0;
 	 send_credit_pnd <= 0;
 	 get_credit <= 0;
@@ -137,16 +138,20 @@ module glip_uart_control
 
    always @(posedge clk) begin
       if (rst) begin
-	 ctrl_rst <= 0;
+	 logic_rst <= 0;
+	 com_rst <= 0;
       end else begin
-	 if (ctrl_rst_en) begin
-	    ctrl_rst <= ctrl_rst_val;
+	 if (logic_rst_en) begin
+	    logic_rst <= logic_rst_val;
+	 end
+	 if (com_rst_en) begin
+	    com_rst <= com_rst_val;
 	 end
       end
    end
    
    /* debtor AUTO_TEMPLATE(
-    .rst     (logic_rst),
+    .rst     (com_rst),
     .owing   (can_send),
     .error   (mod_error[3]),
     .payback (transfer_egress),
@@ -161,13 +166,13 @@ module glip_uart_control
 	    .error			(mod_error[3]),		 // Templated
 	    // Inputs
 	    .clk			(clk),
-	    .rst			(logic_rst),		 // Templated
+	    .rst			(com_rst),		 // Templated
 	    .payback			(transfer_egress),	 // Templated
 	    .tranche			(debt),			 // Templated
 	    .lend			(debt_en));		 // Templated
 
    /* creditor AUTO_TEMPLATE(
-    .rst     (logic_rst),
+    .rst     (com_rst),
     .payback (transfer_ingress),
     .borrow  (get_credit),
     .grant   (get_credit_ack),
@@ -184,11 +189,12 @@ module glip_uart_control
 	      .error			(mod_error[2]),		 // Templated
 	      // Inputs
 	      .clk			(clk),
-	      .rst			(logic_rst),		 // Templated
+	      .rst			(com_rst),		 // Templated
 	      .payback			(transfer_ingress),	 // Templated
 	      .borrow			(get_credit));		 // Templated
    
    /* glip_uart_control_egress AUTO_TEMPLATE(
+    .rst        (com_rst),
     .in_\(.*\)  (egress_in_\1),
     .out_\(.*\) (egress_out_\1),
     .transfer   (transfer_egress),
@@ -206,7 +212,7 @@ module glip_uart_control
 	      .error			(mod_error[1]),		 // Templated
 	      // Inputs
 	      .clk			(clk),
-	      .rst			(rst),
+	      .rst			(com_rst),		 // Templated
 	      .in_data			(egress_in_data),	 // Templated
 	      .in_valid			(egress_in_valid),	 // Templated
 	      .out_done			(egress_out_done),	 // Templated
@@ -233,8 +239,10 @@ module glip_uart_control
 	       .transfer		(transfer_ingress),	 // Templated
 	       .credit_en		(debt_en),		 // Templated
 	       .credit_val		(debt),			 // Templated
-	       .rst_en			(ctrl_rst_en),		 // Templated
-	       .rst_val			(ctrl_rst_val),		 // Templated
+	       .logic_rst_en		(logic_rst_en),
+	       .logic_rst_val		(logic_rst_val),
+	       .com_rst_en		(com_rst_en),
+	       .com_rst_val		(com_rst_val),
 	       .error			(mod_error[0]),		 // Templated
 	       // Inputs
 	       .clk			(clk),

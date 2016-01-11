@@ -58,6 +58,7 @@ module glip_uart_toplevel
 
     // GLIP Control Interface
     output 	 logic_rst,
+    output 	 com_rst,
     
     // UART Interface
     input 	 uart_rx,
@@ -99,7 +100,7 @@ module glip_uart_toplevel
    wire 	  rcv_error;
    wire 	  control_error;
    always @(posedge clk_io) begin
-      if (rst) begin
+      if (rst | com_rst) begin
 	 error <= 0;
       end else begin
 	 error <= error | rcv_error;
@@ -123,6 +124,7 @@ module glip_uart_toplevel
 	     .egress_out_data		(egress_out_data[7:0]),
 	     .egress_out_enable		(egress_out_enable),
 	     .logic_rst			(logic_rst),
+	     .com_rst			(com_rst),
 	     .error			(control_error),	 // Templated
 	     // Inputs
 	     .clk			(clk_io),		 // Templated
@@ -154,6 +156,7 @@ module glip_uart_toplevel
 	     .rx			(uart_rx));		 // Templated
 
    /* glip_uart_transmit AUTO_TEMPLATE(
+    .rst    (com_rst),
     .clk    (clk_io),
     .tx     (uart_tx),
     .done   (egress_out_done),
@@ -168,7 +171,7 @@ module glip_uart_toplevel
 	      .done			(egress_out_done),	 // Templated
 	      // Inputs
 	      .clk			(clk_io),		 // Templated
-	      .rst			(rst),
+	      .rst			(com_rst),		 // Templated
 	      .data			(egress_out_data[7:0]),	 // Templated
 	      .enable			(egress_out_enable & ~uart_cts)); // Templated
    
@@ -194,7 +197,7 @@ module glip_uart_toplevel
       .DI          (ingress_out_data[7:0]),
       .RDCLK       (clk_logic),
       .RDEN        (fifo_in_ready),
-      .RST         (logic_rst),
+      .RST         (com_rst),
       .WRCLK       (clk_io),
       .WREN        (ingress_out_valid)
       );
@@ -221,7 +224,7 @@ module glip_uart_toplevel
       .DI          (fifo_out_data[7:0]),
       .RDCLK       (clk_io),
       .RDEN        (egress_in_ready),
-      .RST         (logic_rst),
+      .RST         (com_rst),
       .WRCLK       (clk_logic),
       .WREN        (fifo_out_valid)
       );

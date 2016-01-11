@@ -46,9 +46,13 @@ module glip_uart_control_ingress
    output reg 	     credit_en,
    output reg [13:0] credit_val,
 
-   // Reset control message detected
-   output reg 	     rst_en,
-   output reg 	     rst_val,
+   // Logic reset control message detected
+   output reg 	     logic_rst_en,
+   output reg 	     logic_rst_val,
+
+   // Communication reset control message detected
+   output reg 	     com_rst_en,
+   output reg 	     com_rst_val,
 
    // Error case
    output 	     error
@@ -100,8 +104,10 @@ module glip_uart_control_ingress
       // Default outputs
       out_valid = 1'b0;
       fsm_error = 1'b0;
-      rst_en = 1'b0;
-      rst_val = 1'b0;
+      logic_rst_en = 1'b0;
+      com_rst_en = 1'b0;
+      logic_rst_val = 1'b0;
+      com_rst_val = 1'b0;
       credit_en = 1'b0;
       credit_val = 14'hx;
       
@@ -138,8 +144,11 @@ module glip_uart_control_ingress
 		 // messages. Currently we only have the rst control
 		 // message. Bit 1 is the new state of the rst
 		 // register
-		 rst_en = 1'b1;
-		 rst_val = in_data[1];
+		 logic_rst_en = ~in_data[2];
+		 com_rst_en = in_data[2];
+		 logic_rst_val = in_data[1];
+		 com_rst_val = in_data[1];
+
 		 // Go back to data stream bypassing
 		 nxt_state = STATE_PASSTHROUGH;
 	      end
