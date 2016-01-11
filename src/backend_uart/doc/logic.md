@@ -33,4 +33,4 @@ The following resource utilization of the hardware logic was measured
 on a Xilinx 7 Series device:
 
 | LUTs | Registers | BRAMs |
-| 180  | 185       | 1     |
+| 323  | 154       | 2     |

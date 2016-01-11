@@ -61,3 +61,24 @@ From host to logic we have the following protocol datagrams:
 |----------------------|---------------|--------------------------|
 | `{0,credit[13:8],1}` | `credit[7:0]` | Credit update            |
 | `100000r1`           | -             | Set logic rst pin to `r` |
+| `100001r1`           | -             | Set comm rst pin to `r`  |
+
+The credit datagrams are exchanged as follows:
+
+For the *ingress* path (host to logic), the credit is sent right after
+reset of the communication. This reset is usually a board reset, but
+most importantly when connecting from the host. The communication
+controller then observes the data stream and updates the credit each
+time it falls below the 50% threshold. This gives the host sufficient
+time to actually receive this message before running out of credits,
+and on the other hand does not imply too many messages.
+
+For the *egress* path (logic to host), the host gives all initial
+credit in a few tranches to the FPGA. It then also observes the
+incoming data and sends a new credit of the maximum number that can be
+transferred in one datagram (`0x3fff`) once the remaining credit falls
+below the threshold of `HOST_BUFFER_SIZE - 0x3fff`.
+
+The rst pin is set on demand by the user application. The
+communications reset pin is used by the communication controller to
+reset itself to a defined state.
