@@ -105,15 +105,14 @@ module glip_uart_toplevel
 
    assign uart_rts = 0;
 
-   // Generate error. Sticky when an error occured. Currently we only
-   // have receiver errors if the frame was incorrect
+   // Generate error. Sticky when an error occured.
    wire 	  rcv_error;
    wire 	  control_error;
    always @(posedge clk_io) begin
       if (rst | com_rst) begin
 	 error <= 0;
       end else begin
-	 error <= error | rcv_error;
+	 error <= error | rcv_error | control_error;
       end
    end
 
