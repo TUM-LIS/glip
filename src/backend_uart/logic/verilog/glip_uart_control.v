@@ -58,34 +58,47 @@ module glip_uart_control
     output 	 error
     );
 
-   wire [3:0] 	     mod_error; 	     
+   // Submodule errors
+   wire [3:0] 	     mod_error;
 
+   // Transfer on egress path
    wire 	     transfer_egress;
 
+   // Sufficient credit
    wire 	     can_send;
+
+   // Debt we get from the host
    wire [13:0] 	     debt;
    wire 	     debt_en;
 
+   // Credit we send to the host
    wire [FIFO_CREDIT_WIDTH-1:0] credit;
    reg 				credit_en;
    wire 			credit_ack;
    reg 				get_credit;
    wire 			get_credit_ack;   
-   
+
+   // Reset registers
    wire 			logic_rst_en;
    wire 			logic_rst_val;
    wire 			com_rst_en;
    wire 			com_rst_val;
-   
+
+   // Collect submodule errors as control error
    assign error = |mod_error;
-   
+
+   // Count the ingress transfers to know when we can give new credit
    reg [FIFO_CREDIT_WIDTH-1:0] 	transfer_counter;
    reg [FIFO_CREDIT_WIDTH-1:0] 	nxt_transfer_counter;
-   
+
+   // We want to send new credit
    reg 				send_credit_pnd;
    reg 				nxt_send_credit_pnd;
+   // Start a request to the creditor module. It can be one cycle
+   // delayed, hence make it a register
    reg 				nxt_get_credit;
-   
+
+   // Sequential part of credit generation logic
    always @(posedge clk) begin
       if (rst | com_rst) begin
 	 transfer_counter <= 0;
@@ -97,7 +110,8 @@ module glip_uart_control
 	 get_credit <= nxt_get_credit;
       end
    end
-   
+
+   // Combinational part of credit generation logic
    always @(*) begin
       nxt_send_credit_pnd = send_credit_pnd;
       nxt_get_credit = get_credit;
@@ -107,36 +121,48 @@ module glip_uart_control
       nxt_get_credit = get_credit;
       
       if (send_credit_pnd) begin
+	 // We are in the process of sending new credit
 	 if (get_credit) begin
+	    // .. and still wait for the creditor module to update
 	    if (get_credit_ack) begin
+	       // done
 	       nxt_get_credit = 0;
 	       credit_en = 1;
 	    end
 	 end else begin
+	    // We have a new credit, send it
 	    credit_en = 1;
 	    if (credit_ack) begin
+	       // completed
 	       nxt_send_credit_pnd = 0;
 	    end
 	 end // else: !if(get_credit)
 
+	 // If a transfer happens in between capture it. There should
+	 // never occur more than one transfer actually
 	 if (transfer_counter != 0) begin
 	    if (transfer_in) begin
 	       nxt_transfer_counter = transfer_counter - 1;
 	    end
 	 end
-      end else begin
+      end else begin // if (send_credit_pnd)
+	 // We are not in the process of sending a credit
 	 if (transfer_counter == 0) begin
+	    // But if we have counted down, we reset the counter to
+	    // the 1/2 threshold and go into sending the credit
 	    nxt_transfer_counter = INPUT_FIFO_CREDIT >> 1;
             nxt_send_credit_pnd = 1;
             nxt_get_credit = 1;
-         end
-
-	 if (transfer_in) begin
+         end else if (transfer_in) begin
+	    // Count transfer in this cycle. We cannot miss a transfer
+	    // from above as there are always many cycles (at least
+	    // 10) between transfers
 	    nxt_transfer_counter = nxt_transfer_counter - 1;
 	 end
       end
    end
 
+   // Control the reset registers
    always @(posedge clk) begin
       if (rst) begin
 	 logic_rst <= 0;
