@@ -35,43 +35,43 @@ module nexys4ddr_display
     parameter FREQ = 32'hx,
     parameter REFRESH = 1200
     )
-  (
-   input 	    clk,
-   input 	    rst,
-   input [8*7-1:0]  digits,
-   input [7:0] 	    decpoints,
-   
-   output 	    CA,
-   output 	    CB,
-   output 	    CC,
-   output 	    CD,
-   output 	    CE,
-   output 	    CF,
-   output 	    CG,
-   output 	    DP,
-   output reg [7:0] AN
-   );
+   (
+    input            clk,
+    input            rst,
+    input [8*7-1:0]  digits,
+    input [7:0]      decpoints,
+
+    output           CA,
+    output           CB,
+    output           CC,
+    output           CD,
+    output           CE,
+    output           CF,
+    output           CG,
+    output           DP,
+    output reg [7:0] AN
+    );
    
    localparam REFRESH_CLKDIV = FREQ / (REFRESH * 8);
 
-   reg 		  clk_refresh;
-   reg [31:0] 	  count_refresh;
+   reg               clk_refresh;
+   reg [31:0]        count_refresh;
 
    always @(posedge clk) begin
       if (rst) begin
-	 clk_refresh <= 0;
-	 count_refresh <= REFRESH_CLKDIV >> 1;
+         clk_refresh <= 0;
+         count_refresh <= REFRESH_CLKDIV >> 1;
       end else begin
-	 if (count_refresh == 0) begin
-	    count_refresh <= REFRESH_CLKDIV >> 1;
-	    clk_refresh <= ~clk_refresh;
-	 end else begin
-	    count_refresh <= count_refresh - 1;
-	 end
+         if (count_refresh == 0) begin
+            count_refresh <= REFRESH_CLKDIV >> 1;
+            clk_refresh <= ~clk_refresh;
+         end else begin
+            count_refresh <= count_refresh - 1;
+         end
       end
    end
 
-   wire [6:0] 	  digits_vector [0:7];
+   wire [6:0]     digits_vector [0:7];
 
    assign digits_vector[0] = digits[6:0];
    assign digits_vector[1] = digits[13:7];
@@ -82,18 +82,18 @@ module nexys4ddr_display
    assign digits_vector[6] = digits[48:42];
    assign digits_vector[7] = digits[55:49];
    
-   reg [2:0] 	  an_count;
-
+   reg [2:0]      an_count;
+   
    always @(*) begin
       case (an_count)
-	0: AN = 8'b11111110;	
-	1: AN = 8'b11111101;	
-	2: AN = 8'b11111011;	
-	3: AN = 8'b11110111;	
-	4: AN = 8'b11101111;	
-	5: AN = 8'b11011111;	
-	6: AN = 8'b10111111;	
-	7: AN = 8'b01111111;	
+        0: AN = 8'b11111110;
+        1: AN = 8'b11111101;
+        2: AN = 8'b11111011;
+        3: AN = 8'b11110111;
+        4: AN = 8'b11101111;
+        5: AN = 8'b11011111;
+        6: AN = 8'b10111111;
+        7: AN = 8'b01111111;
       endcase
    end
 
@@ -108,9 +108,9 @@ module nexys4ddr_display
    
    always @(posedge clk_refresh) begin
       if (rst) begin
-	 an_count <= 0;
+         an_count <= 0;
       end else begin
-	 an_count <= an_count + 1;
+         an_count <= an_count + 1;
       end
    end
 

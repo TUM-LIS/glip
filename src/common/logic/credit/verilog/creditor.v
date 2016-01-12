@@ -31,20 +31,20 @@ module creditor
     parameter CREDIT_WIDTH = 1'bx,
     parameter INITIAL_VALUE = {WIDTH{1'bx}})
    (
-    input 			  clk,
-    input 			  rst,
+    input                         clk,
+    input                         rst,
     
-    input 			  payback,
+    input                         payback,
     output reg [CREDIT_WIDTH-1:0] credit,
-    input 			  borrow,
-    output reg 			  grant,
+    input                         borrow,
+    output reg                    grant,
     
-    output 			  error
+    output                        error
     );
    
-   reg [WIDTH-1:0] 		  resources = INITIAL_VALUE;
-   reg [WIDTH:0] 		  nxt_resources;
-   reg [CREDIT_WIDTH-1:0] 	  nxt_credit;
+   reg [WIDTH-1:0]                resources = INITIAL_VALUE;
+   reg [WIDTH:0]                  nxt_resources;
+   reg [CREDIT_WIDTH-1:0]         nxt_credit;
    
    // Error is an overflow of the resources. The host cannot payback
    // more than originally granted.
@@ -53,11 +53,11 @@ module creditor
    // Sample registers for remaining resources and credit
    always @(posedge clk) begin
       if (rst) begin
-	 resources <= INITIAL_VALUE;
-	 credit <= 0;
+         resources <= INITIAL_VALUE;
+         credit <= 0;
       end else begin
-	 resources <= nxt_resources[WIDTH-1:0];
-	 credit <= nxt_credit;
+         resources <= nxt_resources[WIDTH-1:0];
+         credit <= nxt_credit;
       end
    end
 
@@ -68,21 +68,21 @@ module creditor
       grant = 0;
       
       if (payback) begin
-	 nxt_resources = resources + 1;
+         nxt_resources = resources + 1;
       end else if (borrow) begin
-	 grant = 1;
-	 if (WIDTH > CREDIT_WIDTH) begin
-	    if (|resources[WIDTH-1:CREDIT_WIDTH]) begin
-	       nxt_credit = {CREDIT_WIDTH{1'b1}};
-	       nxt_resources = resources - nxt_credit;
-	    end else begin
-	       nxt_credit = resources;
-	       nxt_resources = 0;
-	    end
-	 end else begin
-	    nxt_credit = { {CREDIT_WIDTH-WIDTH{1'b0}}, resources};
-	    nxt_resources = 0;
-	 end // else: !if(WIDTH > CREDIT_WIDTH)
+         grant = 1;
+         if (WIDTH > CREDIT_WIDTH) begin
+            if (|resources[WIDTH-1:CREDIT_WIDTH]) begin
+               nxt_credit = {CREDIT_WIDTH{1'b1}};
+            nxt_resources = resources - nxt_credit;
+         end else begin
+            nxt_credit = resources;
+            nxt_resources = 0;
+         end
+         end else begin
+            nxt_credit = { {CREDIT_WIDTH-WIDTH{1'b0}}, resources};
+            nxt_resources = 0;
+         end // else: !if(WIDTH > CREDIT_WIDTH)
       end
    end
    

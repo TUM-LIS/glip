@@ -44,58 +44,58 @@ module glip_uart_toplevel
     parameter XILINX_TARGET_DEVICE = "7SERIES")
    (
     // Clock & Reset
-    input 	 clk_io,
-    input 	 clk_logic,
-    input 	 rst,
+    input        clk_io,
+    input        clk_logic,
+    input        rst,
 
     // GLIP FIFO Interface
     input [7:0]  fifo_out_data,
-    input 	 fifo_out_valid,
-    output 	 fifo_out_ready,
+    input        fifo_out_valid,
+    output       fifo_out_ready,
     output [7:0] fifo_in_data,
-    output 	 fifo_in_valid,
-    input 	 fifo_in_ready,
+    output       fifo_in_valid,
+    input        fifo_in_ready,
 
     // GLIP Control Interface
-    output 	 logic_rst,
-    output 	 com_rst,
+    output       logic_rst,
+    output       com_rst,
     
     // UART Interface
-    input 	 uart_rx,
-    output 	 uart_tx,
-    input 	 uart_cts,
-    output 	 uart_rts,
+    input        uart_rx,
+    output       uart_tx,
+    input        uart_cts,
+    output       uart_rts,
     
     // Error signal if failure on the line
-    output reg 	 error
+    output reg   error
     );
 
-   wire [7:0] 	  ingress_in_data;
-   wire 	  ingress_in_valid;
-   wire 	  ingress_in_ready;
-   wire [7:0] 	  ingress_out_data;
-   wire 	  ingress_out_valid;
-   wire 	  ingress_out_ready;   
-   wire [7:0] 	  ingress_buffer_data;
-   wire 	  ingress_buffer_valid;
-   wire 	  ingress_buffer_ready;
-   wire [7:0] 	  egress_in_data;
-   wire 	  egress_in_valid;
-   wire 	  egress_in_ready;
-   wire [7:0] 	  egress_out_data;
-   wire 	  egress_out_enable;
-   wire 	  egress_out_done;   
+   wire [7:0]    ingress_in_data;
+   wire          ingress_in_valid;
+   wire          ingress_in_ready;
+   wire [7:0]    ingress_out_data;
+   wire          ingress_out_valid;
+   wire          ingress_out_ready;
+   wire [7:0]    ingress_buffer_data;
+   wire          ingress_buffer_valid;
+   wire          ingress_buffer_ready;
+   wire [7:0]    egress_in_data;
+   wire          egress_in_valid;
+   wire          egress_in_ready;
+   wire [7:0]    egress_out_data;
+   wire          egress_out_enable;
+   wire          egress_out_done;
 
-   wire 	  transfer_in;
+   wire          transfer_in;
    assign transfer_in = ingress_buffer_valid & ingress_buffer_ready;
 
    // Map FIFO signals to flow control
-   wire 	  in_fifo_full;
-   wire 	  in_fifo_empty;
-   wire 	  in_buffer_almost_full;
-   wire 	  in_buffer_empty;
-   wire 	  out_fifo_full;
-   wire 	  out_fifo_empty;
+   wire          in_fifo_full;
+   wire          in_fifo_empty;
+   wire          in_buffer_almost_full;
+   wire          in_buffer_empty;
+   wire          out_fifo_full;
+   wire          out_fifo_empty;
    assign ingress_out_ready = ~in_buffer_almost_full;
    assign ingress_buffer_valid = ~in_buffer_empty;
    assign ingress_buffer_ready = ~in_fifo_full;
@@ -106,13 +106,13 @@ module glip_uart_toplevel
    assign uart_rts = 0;
 
    // Generate error. Sticky when an error occured.
-   wire 	  rcv_error;
-   wire 	  control_error;
+   wire          rcv_error;
+   wire          control_error;
    always @(posedge clk_io) begin
       if (rst | com_rst) begin
-	 error <= 0;
+         error <= 0;
       end else begin
-	 error <= error | rcv_error | control_error;
+         error <= error | rcv_error | control_error;
       end
    end
 
@@ -125,26 +125,26 @@ module glip_uart_toplevel
        .INPUT_FIFO_CREDIT(4090),
        .FREQ(FREQ))
    u_control(/*AUTOINST*/
-	     // Outputs
-	     .ingress_in_ready		(ingress_in_ready),
-	     .ingress_out_data		(ingress_out_data[7:0]),
-	     .ingress_out_valid		(ingress_out_valid),
-	     .egress_in_ready		(egress_in_ready),
-	     .egress_out_data		(egress_out_data[7:0]),
-	     .egress_out_enable		(egress_out_enable),
-	     .logic_rst			(logic_rst),
-	     .com_rst			(com_rst),
-	     .error			(control_error),	 // Templated
-	     // Inputs
-	     .clk			(clk_io),		 // Templated
-	     .rst			(rst),
-	     .ingress_in_data		(ingress_in_data[7:0]),
-	     .ingress_in_valid		(ingress_in_valid),
-	     .ingress_out_ready		(ingress_out_ready),
-	     .egress_in_data		(egress_in_data[7:0]),
-	     .egress_in_valid		(egress_in_valid),
-	     .egress_out_done		(egress_out_done),
-	     .transfer_in		(transfer_in));
+             // Outputs
+             .ingress_in_ready          (ingress_in_ready),
+             .ingress_out_data          (ingress_out_data[7:0]),
+             .ingress_out_valid         (ingress_out_valid),
+             .egress_in_ready           (egress_in_ready),
+             .egress_out_data           (egress_out_data[7:0]),
+             .egress_out_enable         (egress_out_enable),
+             .logic_rst                 (logic_rst),
+             .com_rst                   (com_rst),
+             .error                     (control_error),         // Templated
+             // Inputs
+             .clk                       (clk_io),                // Templated
+             .rst                       (rst),
+             .ingress_in_data           (ingress_in_data[7:0]),
+             .ingress_in_valid          (ingress_in_valid),
+             .ingress_out_ready         (ingress_out_ready),
+             .egress_in_data            (egress_in_data[7:0]),
+             .egress_in_valid           (egress_in_valid),
+             .egress_out_done           (egress_out_done),
+             .transfer_in               (transfer_in));
    
    /* glip_uart_receive AUTO_TEMPLATE(
     .clk (clk_io),
@@ -156,14 +156,14 @@ module glip_uart_toplevel
    glip_uart_receive
      #(.DIVISOR(FREQ/BAUD))
    u_receive(/*AUTOINST*/
-	     // Outputs
-	     .enable			(ingress_in_valid),	 // Templated
-	     .data			(ingress_in_data),	 // Templated
-	     .error			(rcv_error),		 // Templated
-	     // Inputs
-	     .clk			(clk_io),		 // Templated
-	     .rst			(rst),
-	     .rx			(uart_rx));		 // Templated
+             // Outputs
+             .enable                    (ingress_in_valid),      // Templated
+             .data                      (ingress_in_data),       // Templated
+             .error                     (rcv_error),             // Templated
+             // Inputs
+             .clk                       (clk_io),                // Templated
+             .rst                       (rst),
+             .rx                        (uart_rx));              // Templated
 
    /* glip_uart_transmit AUTO_TEMPLATE(
     .rst    (com_rst),
@@ -176,14 +176,14 @@ module glip_uart_toplevel
    glip_uart_transmit
      #(.DIVISOR(FREQ/BAUD))
    u_transmit(/*AUTOINST*/
-	      // Outputs
-	      .tx			(uart_tx),		 // Templated
-	      .done			(egress_out_done),	 // Templated
-	      // Inputs
-	      .clk			(clk_io),		 // Templated
-	      .rst			(com_rst),		 // Templated
-	      .data			(egress_out_data[7:0]),	 // Templated
-	      .enable			(egress_out_enable & ~uart_cts)); // Templated
+              // Outputs
+              .tx                       (uart_tx),               // Templated
+              .done                     (egress_out_done),       // Templated
+              // Inputs
+              .clk                      (clk_io),                // Templated
+              .rst                      (com_rst),               // Templated
+              .data                     (egress_out_data[7:0]),  // Templated
+              .enable                   (egress_out_enable & ~uart_cts)); // Templated
 
    // Buffer uart -> logic
    FIFO_DUALCLOCK_MACRO

@@ -26,24 +26,24 @@
 
 module bcdcounter
   (
-   input 	    clk, rst,
-   input [3:0]	    carry_in,
+   input            clk, rst,
+   input [3:0]      carry_in,
    output reg [3:0] count,
-   output reg 	    carry_out
+   output reg       carry_out
    );
 
-   reg [3:0] 	    nxt_count;
-   reg 		    nxt_carry_out;
+   reg [3:0]        nxt_count;
+   reg              nxt_carry_out;
 
-   reg [4:0] 	    sum;
+   reg [4:0]        sum;
 
    always @(*) begin
       sum = count + carry_in;
       nxt_carry_out = 0;
       
       if (sum > 9) begin
-	 nxt_carry_out = 1;
-	 sum = sum - 10;
+         nxt_carry_out = 1;
+         sum = sum - 10;
       end
 
       nxt_count = sum[3:0];
@@ -51,12 +51,11 @@ module bcdcounter
 
    always @(posedge clk) begin
       if (rst) begin
-	 count <= 0;
-	 carry_out <= 0;
+         count <= 0;
+         carry_out <= 0;
       end else begin
-	 count <= nxt_count;
-	 carry_out <= nxt_carry_out;
+         count <= nxt_count;
+         carry_out <= nxt_carry_out;
       end
    end
 endmodule // bcdcounter
-

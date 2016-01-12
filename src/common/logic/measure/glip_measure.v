@@ -38,34 +38,34 @@ module glip_measure
     parameter DIGITS = 8,
     parameter OFFSET = 0,
     parameter STEP = 4'd1)
-  (
-   input 		     clk,
-   input 		     rst,
+   (
+    input                     clk,
+    input                     rst,
 
-   // High when count this cycle
-   input 		     trigger,
+    // High when count this cycle
+    input                     trigger,
 
-   // Emit digits (4 bit each)
-   output reg [DIGITS*4-1:0] digits,
+    // Emit digits (4 bit each)
+    output reg [DIGITS*4-1:0] digits,
 
-   // Emit overflow
-   output reg 		     overflow
-   );
+    // Emit overflow
+    output reg                overflow
+    );
 
    // Total number of digits
    localparam TOTAL = DIGITS + OFFSET;
 
-   wire [TOTAL-1:0] 	 carry; // Carry between digits
-   wire 		 sample; // Sample trigger (every second)
-   reg [31:0] 		 count; // Counter for sampling
-   wire [DIGITS*4-1:0] 	 sample_digits; // Counter until sampled
+   wire [TOTAL-1:0]           carry; // Carry between digits
+   wire                       sample; // Sample trigger (every second)
+   reg [31:0]                 count; // Counter for sampling
+   wire [DIGITS*4-1:0]        sample_digits; // Counter until sampled
 
    // Sample logic
    // Every second we update the digits to give Byte/s
    always @(posedge clk) begin
       if (sample) begin
-	 overflow <= carry[TOTAL-1];
-	 digits <= sample_digits;
+         overflow <= carry[TOTAL-1];
+         digits <= sample_digits;
       end
    end
 
@@ -75,45 +75,43 @@ module glip_measure
    // Perpetual countdown
    always @(posedge clk) begin
       if (rst) begin
-	 count <= FREQ;
+         count <= FREQ;
       end else begin
-	 if (count == 0) begin
-	    count <= FREQ;
-	 end else begin
-	    count <= count - 1;
-	 end
+         if (count == 0) begin
+            count <= FREQ;
+         end else begin
+            count <= count - 1;
+         end
       end
    end   
 
    // Generate the set of BCD counters
-   genvar 		 i;
+   genvar                i;
    generate
       for (i = 0; i < TOTAL; i = i + 1) begin
-	 wire [3:0] carry_in;
-	 wire [3:0] mydigits;
+         wire [3:0] carry_in;
+         wire [3:0] mydigits;
 
-	 if (i == 0) begin
-	    // The first one carries in the STEP on a trigger
-	    assign carry_in = trigger ? STEP : 4'd0;
-	 end else begin
-	    // All others carry in their pre-decessors carry
-	    assign carry_in = { 3'b000, carry[i-1]};
-	 end
+         if (i == 0) begin
+            // The first one carries in the STEP on a trigger
+            assign carry_in = trigger ? STEP : 4'd0;
+         end else begin
+            // All others carry in their pre-decessors carry
+            assign carry_in = { 3'b000, carry[i-1]};
+         end
 
-	 if (i > OFFSET) begin
-	    // Assign the relevant digits to get sampled, we attribute the
-	    // OFFSET here and don't care about the lower digits.
-	    assign sample_digits[(i-OFFSET+1)*4-1:(i-OFFSET)*4] = mydigits;
-	 end
-	 
-	 bcdcounter
-	   u_count(.clk       (clk),
-		   .rst       (sample),
-		   .carry_in  (carry_in[3:0]),
-		   .count     (mydigits[3:0]),
-		   .carry_out (carry[i]));
+         if (i > OFFSET) begin
+            // Assign the relevant digits to get sampled, we attribute the
+            // OFFSET here and don't care about the lower digits.
+            assign sample_digits[(i-OFFSET+1)*4-1:(i-OFFSET)*4] = mydigits;
+         end
+
+         bcdcounter
+           u_count(.clk       (clk),
+                   .rst       (sample),
+                   .carry_in  (carry_in[3:0]),
+                   .count     (mydigits[3:0]),
+                   .carry_out (carry[i]));
       end
    endgenerate
 endmodule // glip_measure
-
-   
