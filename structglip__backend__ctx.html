@@ -113,17 +113,30 @@ Data Fields</h2></td></tr>
 <tr class="memitem:a320511f2f43b2eae6c7a63ecfdbd7653"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a320511f2f43b2eae6c7a63ecfdbd7653"></a>
 char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr>
 <tr class="separator:a320511f2f43b2eae6c7a63ecfdbd7653"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05b954baa9b654fe6ec33af54a74c2fe"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a05b954baa9b654fe6ec33af54a74c2fe"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>fd</b></td></tr>
+<tr class="memitem:a05b954baa9b654fe6ec33af54a74c2fe"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a05b954baa9b654fe6ec33af54a74c2fe">fd</a></td></tr>
 <tr class="separator:a05b954baa9b654fe6ec33af54a74c2fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4bbf72714e550b2e1f109461ea82b3fa"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a4bbf72714e550b2e1f109461ea82b3fa"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>speed</b></td></tr>
+<tr class="memitem:a4bbf72714e550b2e1f109461ea82b3fa"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a4bbf72714e550b2e1f109461ea82b3fa">speed</a></td></tr>
 <tr class="separator:a4bbf72714e550b2e1f109461ea82b3fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab130e5b003c033761ac043e5fa296d1a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#ab130e5b003c033761ac043e5fa296d1a">buffer_size</a></td></tr>
+<tr class="separator:ab130e5b003c033761ac043e5fa296d1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a093dfdd19903bd5c7ffefc069cd41558"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="structcbuf.html">cbuf</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a093dfdd19903bd5c7ffefc069cd41558">input_buffer</a></td></tr>
+<tr class="separator:a093dfdd19903bd5c7ffefc069cd41558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a649da41ea43bb21736ad26cc771b17a3"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="structcbuf.html">cbuf</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a649da41ea43bb21736ad26cc771b17a3">output_buffer</a></td></tr>
+<tr class="separator:a649da41ea43bb21736ad26cc771b17a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb340614f9d421cd8fef5837df90f852"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#aeb340614f9d421cd8fef5837df90f852">debt</a></td></tr>
+<tr class="separator:aeb340614f9d421cd8fef5837df90f852"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e7d08630c97e188cb74a7e2e1bc3d2d"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a1e7d08630c97e188cb74a7e2e1bc3d2d">credit</a></td></tr>
+<tr class="separator:a1e7d08630c97e188cb74a7e2e1bc3d2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ae073aaf35f056d0e99c261605fae48"><td class="memItemLeft" align="right" valign="top">volatile int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a6ae073aaf35f056d0e99c261605fae48">reset_request</a></td></tr>
+<tr class="separator:a6ae073aaf35f056d0e99c261605fae48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6cebc67cee12b95908d7201aaa594617"><td class="memItemLeft" align="right" valign="top">volatile int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a6cebc67cee12b95908d7201aaa594617">term_request</a></td></tr>
+<tr class="separator:a6cebc67cee12b95908d7201aaa594617"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>GLIP backend context for the Cypress FX2 backend</p>
 <p>GLIP backend context for the JTAG backend</p>
-<p>GLIP backend context for the TCP backend </p>
+<p>GLIP backend context for the TCP backend</p>
+<p>GLIP backend context for the UART backend </p>
 </div><h2 class="groupheader">Field Documentation</h2>
 <a class="anchor" id="abcd17eee96cd766bbba2e3511c29e448"></a>
 <div class="memitem">
@@ -264,7 +277,8 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>speed</b></td></t
         </tr>
       </table>
 </div><div class="memdoc">
-<p>communication thread </p>
+<p>communication thread</p>
+<p>Baud rate </p>
 
 </div>
 </div>
@@ -387,6 +401,123 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>speed</b></td></t
 
 </div>
 </div>
+<a class="anchor" id="a05b954baa9b654fe6ec33af54a74c2fe"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int glip_backend_ctx::fd</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Device name </p>
+
+</div>
+</div>
+<a class="anchor" id="a4bbf72714e550b2e1f109461ea82b3fa"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t glip_backend_ctx::speed</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Terminal file </p>
+
+</div>
+</div>
+<a class="anchor" id="ab130e5b003c033761ac043e5fa296d1a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t glip_backend_ctx::buffer_size</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Thread instance </p>
+
+</div>
+</div>
+<a class="anchor" id="a093dfdd19903bd5c7ffefc069cd41558"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="structcbuf.html">cbuf</a>* glip_backend_ctx::input_buffer</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Size of circular buffers </p>
+
+</div>
+</div>
+<a class="anchor" id="a649da41ea43bb21736ad26cc771b17a3"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="structcbuf.html">cbuf</a>* glip_backend_ctx::output_buffer</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Input buffer </p>
+
+</div>
+</div>
+<a class="anchor" id="aeb340614f9d421cd8fef5837df90f852"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t glip_backend_ctx::debt</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Output buffer </p>
+
+</div>
+</div>
+<a class="anchor" id="a1e7d08630c97e188cb74a7e2e1bc3d2d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t glip_backend_ctx::credit</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Current debt (what we can send) </p>
+
+</div>
+</div>
+<a class="anchor" id="a6ae073aaf35f056d0e99c261605fae48"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile int glip_backend_ctx::reset_request</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Current credit (what logic can send) </p>
+
+</div>
+</div>
+<a class="anchor" id="a6cebc67cee12b95908d7201aaa594617"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile int glip_backend_ctx::term_request</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Request a logic reset </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following files:<ul>
 <li>backend_cypressfx2/sw/backend_cypressfx2.c</li>
 <li>backend_jtag/sw/backend_jtag.c</li>
@@ -399,7 +530,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>speed</b></td></t
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="structglip__backend__ctx.html">glip_backend_ctx</a></li>
-    <li class="footer">Generated on Sun Jan 3 2016 15:08:21 for glip by
+    <li class="footer">Generated on Tue Jan 12 2016 09:47:50 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

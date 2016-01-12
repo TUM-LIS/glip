@@ -72,6 +72,8 @@ $(document).ready(function(){initNavTree('group__backend__uart.html','');});
 Modules</h2></td></tr>
 <tr class="memitem:group__backend__uart-logic"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__uart-logic.html">UART FPGA Logic</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__backend__uart-protocol"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__uart-protocol.html">UART Protocol</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:group__backend__uart-sw"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__uart-sw.html">UART libglip backend</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -81,21 +83,24 @@ Modules</h2></td></tr>
 <ul>
 <li>Number of channels: 1 (fixed)</li>
 <li>FIFO width: 8 bit (fixed)</li>
+<li>Logic reset</li>
+<li>Robust end-to-end flow control, even without CTS/RTS</li>
 </ul>
 <h1>Components </h1>
 <p>To make use of this backend, the standard linux terminal I/O is used.</p>
 <p>For details and usage instructions for the individual components, see these pages:</p><ul>
 <li><a class="el" href="group__backend__uart-sw.html">libglip Backend</a></li>
 <li><a class="el" href="group__backend__uart-logic.html">FPGA Logic</a></li>
+<li><a class="el" href="group__backend__uart-protocol.html">Details of the end-to-end flow control</a></li>
 </ul>
 <h1>Performance </h1>
-<p>As UART is a relatively slow interface, the backend usually reaches the maximum throughput. That is 10 symbols (8 bit payload plus start and stop bit), meaning BAUD/10 symbols Byte/s. For example, With 115,200 Baud you get 11,520 Byte/s and with 3,000,000 Baud you get 300,000 Byte/s. </p>
+<p>As UART is a relatively slow interface, the backend usually reaches the maximum throughput. That is 10 symbols (8 bit payload plus start and stop bit), meaning BAUD/10 symbols Byte/s. For example, With 115,200 Baud you get 11,520 Byte/s and with 3,000,000 Baud you get 300,000 Byte/s. There is a small loss of this theoretical throughput as we need some flow control messages and mask the byte <code>0xfe</code> in the data stream. With uniformly distributed random data you get approximately 298,500 Byte/s at 3 MBaud. Hence you generally get nearly full throughput, with the exception that it drops to roughly 50% if you only send the byte <code>0xfe</code>. </p>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Sun Jan 3 2016 15:08:21 for glip by
+    <li class="footer">Generated on Tue Jan 12 2016 09:47:50 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
