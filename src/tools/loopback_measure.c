@@ -246,11 +246,11 @@ int main(int argc, char *argv[])
             block_size = transfer_size - current_sent;
         }
 
+        int sub_idx = current_sent % WRITE_BLOCK_SIZE;
         if (use_blocking_functions) {
-            rv = glip_write_b(glip_ctx, 0, block_size, data,
-                              &size_written, 0);
+            rv = glip_write_b(glip_ctx, 0, block_size - sub_idx,
+                              &data[sub_idx], &size_written, 0);
         } else {
-            int sub_idx = current_sent % WRITE_BLOCK_SIZE;
             rv = glip_write(glip_ctx, 0, block_size - sub_idx,
                             &data[sub_idx], &size_written);
         }
