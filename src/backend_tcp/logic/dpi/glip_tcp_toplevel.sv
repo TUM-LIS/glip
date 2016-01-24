@@ -83,8 +83,16 @@ module glip_tcp_toplevel
          logic_rst = 0;
          com_rst = 0;           
       end else begin
+         int connected;
          int unsigned state;
          longint data;
+
+         connected = glip_tcp_connected(obj);
+         if (connected > 0) begin
+            com_rst = 1'b1;
+         end else begin
+            com_rst = 1'b0;
+         end
          
          state = glip_tcp_next_cycle(obj);
 
@@ -92,6 +100,8 @@ module glip_tcp_toplevel
          if ((state & STATE_MASK_CTRL) != 0) begin
             int data = glip_tcp_control_msg(obj);
             logic_rst = data[0];
+         end else begin
+            logic_rst = 1'b0;
          end
 
          // We have new incoming data
@@ -106,6 +116,8 @@ module glip_tcp_toplevel
          // Write outgoing data
          if ((state & STATE_MASK_WRITE) != 0) begin
             fifo_out_ready = 1;
+         end else begin
+            fifo_out_ready = 0;
          end
       end
    end
