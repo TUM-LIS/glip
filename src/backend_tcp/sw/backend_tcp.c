@@ -293,7 +293,7 @@ int gb_tcp_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         }
         size_read_tmp += sr;
 
-        if (sr != size_remaining) {
+        if ((sr != size_remaining) && (timeout > 0)) {
             /* we didn't get as much data as we requested - wait for new data! */
             do {
                 /* calculate remaining wait time */
@@ -398,7 +398,7 @@ int gb_tcp_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         }
         size_written_tmp += sw;
 
-        if (sw != size_remaining) {
+        if ((sw != size_remaining) && (timeout > 0)) {
             /* more data needs to be written */
             do {
                 /* calculate remaining wait time */
