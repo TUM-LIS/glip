@@ -257,9 +257,11 @@ int gb_tcp_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     ssize_t rsize = read(bctx->data_sfd, data, size);
     if (rsize == -1) {
+        *size_read = 0;
         if (errno == EAGAIN) {
-            *size_read = 0;
             return 0;
+        } else {
+            return -1;
         }
     }
 
@@ -293,7 +295,7 @@ int gb_tcp_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         }
         size_read_tmp += sr;
 
-        if (sr != size_remaining) {
+        if ((sr != size_remaining) && (timeout > 0)) {
             /* we didn't get as much data as we requested - wait for new data! */
             do {
                 /* calculate remaining wait time */
@@ -361,9 +363,11 @@ int gb_tcp_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     ssize_t wsize = write(bctx->data_sfd, data, size);
     if (wsize == -1) {
+        *size_written = 0;
         if (errno == EAGAIN) {
-            *size_written = 0;
             return 0;
+        } else {
+            return -1;
         }
     }
 
@@ -398,7 +402,7 @@ int gb_tcp_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         }
         size_written_tmp += sw;
 
-        if (sw != size_remaining) {
+        if ((sw != size_remaining) && (timeout > 0)) {
             /* more data needs to be written */
             do {
                 /* calculate remaining wait time */
