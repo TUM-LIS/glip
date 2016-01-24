@@ -257,9 +257,11 @@ int gb_tcp_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     ssize_t rsize = read(bctx->data_sfd, data, size);
     if (rsize == -1) {
+        *size_read = 0;
         if (errno == EAGAIN) {
-            *size_read = 0;
             return 0;
+        } else {
+            return -1;
         }
     }
 
@@ -361,9 +363,11 @@ int gb_tcp_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     ssize_t wsize = write(bctx->data_sfd, data, size);
     if (wsize == -1) {
+        *size_written = 0;
         if (errno == EAGAIN) {
-            *size_written = 0;
             return 0;
+        } else {
+            return -1;
         }
     }
 
