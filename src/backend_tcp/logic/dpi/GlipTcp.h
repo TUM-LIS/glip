@@ -39,8 +39,32 @@ using namespace boost::lockfree;
  */
 class GlipTcp {
 public:
-    /** Constructor */
-    GlipTcp(int port, int width);
+    /**
+     * Singleton: Get instance
+     *
+     * We are using a singleton to enforce we have exactly one instance.
+     * It is therefore currently allowed to have two Glip DPI interfaces
+     * in a system. As the interface to the logic still allows that,
+     * the singleton will become a regular class in the future.
+     *
+     * @return Instance of the Glip TCP interface
+     */
+    static GlipTcp& instance() {
+        static GlipTcp inst;
+        return inst;
+    }
+
+    /**
+     * Constructor replacement
+     *
+     * As we currently use a singleton, this is called instead of it.
+     *
+     * It can only be called once
+     *
+     * @param port TCP port
+     * @param width Bit with as multiple of 8 and <=64
+     */
+    void init(int port, int width);
 
     /** Reset the interface */
     int reset();
@@ -110,6 +134,9 @@ public:
     static const uint32_t OUTGOING_READY     = 0x4;
 
 private:
+    /* Singleton */
+    GlipTcp();
+
     /** TCP base port number */
     int mPort;
     /** Number of bytes in width */

@@ -7,7 +7,8 @@
 #include <iostream>
 
 #include "obj_dir/Vtb_verilator_dpi_loopback.h"
-#include "obj_dir/Vtb_verilator_dpi_loopback__Dpi.h"
+
+#include "GlipTcp.h"
 
 using namespace std;
 
@@ -42,9 +43,9 @@ int main(int argc, char** argv) {
     }
 
     vluint64_t time = 0;
+    GlipTcp *glip = &GlipTcp::instance();
     while(!Verilated::gotFinish() && (time < end)) {
-        if (!top->v__DOT__u_glip__DOT__obj ||
-                !glip_tcp_connected((void*) top->v__DOT__u_glip__DOT__obj)) {
+        if (!glip->connected()) {
             continue;
         }
 

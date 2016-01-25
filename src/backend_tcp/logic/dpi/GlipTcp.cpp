@@ -13,9 +13,15 @@
 
 using namespace std;
 
-GlipTcp::GlipTcp(int port, int width)
-: mPort(port), mNumBytes(width >> 3), mThreadReady(false),
-  mConnected(false), mDataIn(16*1024), mDataOut(16*1024), mControl(256) {
+GlipTcp::GlipTcp() : mThreadReady(false), mConnected(false),
+        mDataIn(16*1024), mDataOut(16*1024), mControl(256) {
+}
+
+void GlipTcp::init(int port, int width) {
+    assert(!mThreadReady); // Make sure there is only one instance
+
+    mPort = port;
+    mNumBytes = width >> 3;
     pthread_create(&mThread, 0, &GlipTcp::thread, this);
 
     reset();

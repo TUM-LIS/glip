@@ -43,7 +43,8 @@ void* glip_tcp_create(int tcp_port, int width) {
         return 0;
     }
 
-    GlipTcp *obj = new GlipTcp(tcp_port, width);
+    GlipTcp *obj = &GlipTcp::instance();
+    obj->init(tcp_port, width);
     return (void*) obj;
 }
 
