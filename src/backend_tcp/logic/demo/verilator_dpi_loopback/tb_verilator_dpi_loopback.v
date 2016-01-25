@@ -8,36 +8,30 @@ module tb_verilator_dpi_loopback
 
    parameter WIDTH = 16;
    
-   wire [WIDTH-1:0] data;
-   wire             valid;
-   wire             ready;
+   glip_channel #(.WIDTH(WIDTH)) u_channel(.clk(clk));
    
    wire             logic_rst;
    wire             com_rst;
    
    /* glip_tcp_toplevel AUTO_TEMPLATE(
-    .fifo_.*_valid (valid),
-    .fifo_.*_ready (ready),
-    .fifo_.*_data  (data),
-    .clk_io        (clk),
-    .clk_logic     (clk),
+    .fifo_out  (u_channel),
+    .fifo_in   (u_channel),
+    .clk_io    (clk),
+    .clk_logic (clk),
     ); */
    glip_tcp_toplevel
      #(.WIDTH(WIDTH))
      u_glip(/*AUTOINST*/
+            // Interfaces
+            .fifo_out                   (u_channel),             // Templated
+            .fifo_in                    (u_channel),             // Templated
             // Outputs
-            .fifo_out_ready             (ready),                 // Templated
-            .fifo_in_data               (data),                  // Templated
-            .fifo_in_valid              (valid),                 // Templated
             .logic_rst                  (logic_rst),
             .com_rst                    (com_rst),
             // Inputs
             .clk_io                     (clk),                   // Templated
             .clk_logic                  (clk),                   // Templated
-            .rst                        (rst),
-            .fifo_out_data              (data),                  // Templated
-            .fifo_out_valid             (valid),                 // Templated
-            .fifo_in_ready              (ready));                // Templated
+            .rst                        (rst));
 
 endmodule
 

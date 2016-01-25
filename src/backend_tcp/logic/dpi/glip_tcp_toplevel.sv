@@ -34,12 +34,8 @@ module glip_tcp_toplevel
     input                  rst,
 
     // GLIP FIFO Interface
-    input [WIDTH-1:0]      fifo_out_data,
-    input                  fifo_out_valid,
-    output reg             fifo_out_ready,
-    output reg [WIDTH-1:0] fifo_in_data,
-    output reg             fifo_in_valid,
-    input                  fifo_in_ready,
+    glip_channel.master    fifo_out,
+    glip_channel.slave     fifo_in,
 
     // GLIP Control Interface
     output                 logic_rst,
@@ -107,28 +103,28 @@ module glip_tcp_toplevel
          // We have new incoming data
          if ((state & STATE_MASK_READ) != 0) begin
             longint data = glip_tcp_read(obj);
-            fifo_in_data = data[WIDTH-1:0];
-            fifo_in_valid = 1;      
+            fifo_in.data = data[WIDTH-1:0];
+            fifo_in.valid = 1;
          end else begin
-            fifo_in_valid = 0;
+            fifo_in.valid = 0;
          end
 
          // Write outgoing data
          if ((state & STATE_MASK_WRITE) != 0) begin
-            fifo_out_ready = 1;
+            fifo_out.ready = 1;
          end else begin
-            fifo_out_ready = 0;
+            fifo_out.ready = 0;
          end
       end
    end
 
    always @(posedge clk_logic) begin
-      if (fifo_in_valid & fifo_in_ready) begin
+      if (fifo_in.valid & fifo_in.ready) begin
          glip_tcp_read_ack(obj);
       end
-      if (fifo_out_valid & fifo_out_ready) begin
+      if (fifo_out.valid & fifo_out.ready) begin
          longint data = 0;
-         data[WIDTH-1:0] = fifo_out_data;
+         data[WIDTH-1:0] = fifo_out.data;
          glip_tcp_write(obj, data);
       end
    end

@@ -2,7 +2,8 @@
 VERILATOR ?=verilator
 
 srcs_verilog = tb_verilator_dpi_loopback.v \
-           ../../dpi/glip_tcp_toplevel.sv
+           ../../dpi/glip_tcp_toplevel.sv \
+           ../../../../common/logic/interface/glip_channel.sv
 
 srcs_cxx = main.cpp \
            ../../dpi/glip_tcp_dpi.cpp \
