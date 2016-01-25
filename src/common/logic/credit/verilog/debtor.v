@@ -30,27 +30,27 @@ module debtor
   #(parameter WIDTH = 1'bx,
     parameter TRANCHE_WIDTH = 1'bx)
    (
-    input 		      clk,
-    input 		      rst,
+    input                     clk,
+    input                     rst,
 
-    input 		      payback,
-    output 		      owing,
+    input                     payback,
+    output                    owing,
     input [TRANCHE_WIDTH-1:0] tranche,
-    input 		      lend,
+    input                     lend,
 
-    output reg 		      error
+    output reg                error
     );
 
-   reg [WIDTH-1:0] 		 credit;
-   reg [WIDTH:0] 		 nxt_credit;
+   reg [WIDTH-1:0]            credit;
+   reg [WIDTH:0]              nxt_credit;
    
    assign owing = |credit;
    
    always @(posedge clk) begin
       if (rst) begin
-	 credit <= 0;
+         credit <= 0;
       end else begin
-	 credit <= nxt_credit[WIDTH-1:0];
+         credit <= nxt_credit[WIDTH-1:0];
       end
    end
 
@@ -59,13 +59,13 @@ module debtor
       error = 0;
       
       if (lend & !payback) begin
-	 nxt_credit = credit + tranche;
-	 error = nxt_credit[WIDTH];
+         nxt_credit = credit + tranche;
+         error = nxt_credit[WIDTH];
       end else if (payback & !lend) begin
-	 nxt_credit = nxt_credit - 1;
-	 error = ~|credit;
+         nxt_credit = nxt_credit - 1;
+         error = ~|credit;
       end else if (lend & payback) begin
-	 nxt_credit = nxt_credit + tranche - 1;
+         nxt_credit = nxt_credit + tranche - 1;
       end
    end // always @ (*)
       

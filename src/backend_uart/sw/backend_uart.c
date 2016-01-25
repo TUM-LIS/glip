@@ -30,8 +30,8 @@
 #include "glip-protected.h"
 
 #include "backend_uart.h"
-#include <cbuf.h>
-#include <util.h>
+#include "cbuf.h"
+#include "util.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -47,10 +47,11 @@
 #include <stdio.h>
 
 
-// Forward declarations of local helpers
+/* Forward declarations of local helpers */
 /**
  * Lookup speed (map to termios defines)
  *
+ * @private
  * Looks up a speed as integer and maps it to termios defines.
  *
  * @param speed Speed as integer
@@ -61,6 +62,7 @@ static int speed_lookup(int speed);
 /**
  * Check if time is reached
  *
+ * @private
  * @param start Start time
  * @param ms Milliseconds to check
  * @return -ETIMEDOUT if time reached, 0 otherwise
@@ -70,32 +72,35 @@ static int check_timeout(struct timeval *start, unsigned long ms);
 /**
  * Blocking read from terminal
  *
+ * @private
  * @param fd File to read from
  * @param buffer Buffer to read to
  * @param size Size to read
  * @param size_read Actual read (only if timeout or error)
  * @param timeout Timeout to use, 0 for none
- * @return 0 if success, -ETIMEDOUT on timeout, errno else
+ * @return 0 if success, -ETIMEDOUT on timeout, -1 else
  */
 static int read_blocking(int fd, uint8_t *buffer, size_t size,
-		size_t *size_read, unsigned int timeout);
+                         size_t *size_read, unsigned int timeout);
 
 /**
  * Blocking write to terminal
  *
+ * @private
  * @param fd File to write to
  * @param buffer Buffer to write from
  * @param size Size to write
  * @param size_write Actual written (only if timeout or error)
  * @param timeout Timeout to use, 0 for none
- * @return 0 if success, -ETIMEDOUT on timeout, errno else
+ * @return 0 if success, -ETIMEDOUT on timeout, -1 else
  */
 static int write_blocking(int fd, uint8_t *buffer, size_t size,
-		size_t *size_written, unsigned int timeout);
+                          size_t *size_written, unsigned int timeout);
 
 /**
  * Reset the user logic
  *
+ * @private
  * Sets the user logic reset register
  *
  * @param fd Terminal to send the reset to
@@ -107,6 +112,7 @@ static int reset_logic(int fd, uint8_t state);
 /**
  * Reset the communication logic
  *
+ * @private
  * Sets the communication logic register
  *
  * @param fd Terminal to use
@@ -118,6 +124,7 @@ static int reset_com(int fd, uint8_t state);
 /**
  * Update a received debt value
  *
+ * @private
  * Debt is the credit the logic gives us. Extracts this new tranche
  * from the words on the line.
  *
@@ -126,12 +133,14 @@ static int reset_com(int fd, uint8_t state);
  * @param second Second received word of credit message
  */
 static void update_debt(struct glip_backend_ctx* ctx, uint8_t first,
-		uint8_t second);
+                        uint8_t second);
 
 /**
  * Give credit to logic
  *
+ * @private
  * Increase credit of logic by tranche
+ *
  * @param ctx Context
  * @param tranche Value to add to credit
  */
@@ -140,6 +149,7 @@ static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche);
 /**
  * Reset the backend
  *
+ * @private
  * Resets the buffers, counters etc.
  *
  * @param ctx Context
@@ -165,34 +175,34 @@ void* thread_func(void *arg);
  * @param size Size of the buffer
  */
 void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer,
-		size_t size);
+                  size_t size);
 
-/*! Maximum tranche we can give in a message */
+/** Maximum tranche we can give in a message */
 static const uint16_t UART_MAX_TRANCHE = 0x3fff;
 
-/*! Temporary buffer size */
+/** Temporary buffer size */
 static const uint16_t TMP_BUFFER_SIZE = 256;
 
 /**
  * GLIP backend context for the UART backend
  */
 struct glip_backend_ctx {
-	char *device; /*! Device name */
-	int fd; /*! Terminal file */
-	uint32_t speed; /*! Baud rate */
+    char *device; /**< Device name */
+    int fd; /**< Terminal file */
+    uint32_t speed; /**< Baud rate */
 
-	pthread_t thread; /*! Thread instance */
+    pthread_t thread; /**< Thread instance */
 
-	size_t buffer_size; /*! Size of circular buffers */
+    size_t buffer_size; /**< Size of circular buffers */
 
-	struct cbuf *input_buffer; /*! Input buffer */
-	struct cbuf *output_buffer; /*! Output buffer */
+    struct cbuf *input_buffer; /**< Input buffer */
+    struct cbuf *output_buffer; /**< Output buffer */
 
-	size_t debt; /*! Current debt (what we can send) */
-	size_t credit; /*! Current credit (what logic can send) */
+    size_t debt; /**< Current debt (what we can send) */
+    size_t credit; /**< Current credit (what logic can send) */
 
-	volatile int reset_request; /*! Request a logic reset */
-	volatile int term_request; /*! Request a termination */
+    volatile int reset_request; /**< Request a logic reset */
+    volatile int term_request; /**< Request a termination */
 };
 
 /**
@@ -207,36 +217,36 @@ struct glip_backend_ctx {
  */
 int gb_uart_new(struct glip_ctx *ctx)
 {
-	// Allocate (zero-initialized) memory for our context
-	struct glip_backend_ctx *c = calloc(1, sizeof(struct glip_backend_ctx));
-	if (!c) {
-		return -1;
-	}
+    /* Allocate (zero-initialized) memory for our context */
+    struct glip_backend_ctx *c = calloc(1, sizeof(struct glip_backend_ctx));
+    if (!c) {
+        return -1;
+    }
 
-	// Register functions for this backend
-	ctx->backend_functions.open = gb_uart_open;
-	ctx->backend_functions.close = gb_uart_close;
-	ctx->backend_functions.logic_reset = gb_uart_logic_reset;
-	ctx->backend_functions.read = gb_uart_read;
-	ctx->backend_functions.read_b = gb_uart_read_b;
-	ctx->backend_functions.write = gb_uart_write;
-	ctx->backend_functions.write_b = gb_uart_write_b;
-	ctx->backend_functions.get_fifo_width = gb_uart_get_fifo_width;
-	ctx->backend_functions.get_channel_count = gb_uart_get_channel_count;
+    /* Register functions for this backend */
+    ctx->backend_functions.open = gb_uart_open;
+    ctx->backend_functions.close = gb_uart_close;
+    ctx->backend_functions.logic_reset = gb_uart_logic_reset;
+    ctx->backend_functions.read = gb_uart_read;
+    ctx->backend_functions.read_b = gb_uart_read_b;
+    ctx->backend_functions.write = gb_uart_write;
+    ctx->backend_functions.write_b = gb_uart_write_b;
+    ctx->backend_functions.get_fifo_width = gb_uart_get_fifo_width;
+    ctx->backend_functions.get_channel_count = gb_uart_get_channel_count;
 
-	ctx->backend_ctx = c;
+    ctx->backend_ctx = c;
 
-	// Set the local buffer sizes and initialize
-	c->buffer_size = 32768;
-	if (cbuf_init(&c->input_buffer, c->buffer_size) != 0) {
-		return -1;
-	}
+    /* Set the local buffer sizes and initialize */
+    c->buffer_size = 32768;
+    if (cbuf_init(&c->input_buffer, c->buffer_size) != 0) {
+        return -1;
+    }
 
-	if (cbuf_init(&c->output_buffer, c->buffer_size) != 0) {
-		return -1;
-	}
+    if (cbuf_init(&c->output_buffer, c->buffer_size) != 0) {
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -252,195 +262,197 @@ int gb_uart_new(struct glip_ctx *ctx)
  */
 int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
 {
-	struct glip_backend_ctx *bctx = ctx->backend_ctx;
+    struct glip_backend_ctx *bctx = ctx->backend_ctx;
 
-	// Initialize the session variables
-	bctx->term_request = 0;
-	bctx->reset_request = 0;
+    /* Initialize the session variables */
+    bctx->term_request = 0;
+    bctx->reset_request = 0;
 
-	if (num_channels != 1) {
-		err(ctx, "Channel number must be 1!\n");
-		return -1;
-	}
+    if (num_channels != 1) {
+        err(ctx, "Channel number must be 1!\n");
+        return -1;
+    }
 
-	// Extract parameters
-	if (glip_option_get_char(ctx, "device", (const char**) &bctx->device) != 0) {
-		bctx->device = "/dev/ttyUSB0";
-	}
+    /* Extract parameters */
+    if (glip_option_get_char(ctx, "device", (const char**) &bctx->device) != 0) {
+        bctx->device = "/dev/ttyUSB0";
+    }
 
-	if (glip_option_get_uint32(ctx, "speed", &bctx->speed) != 0) {
-		bctx->speed = 115200;
-	}
+    if (glip_option_get_uint32(ctx, "speed", &bctx->speed) != 0) {
+        bctx->speed = 115200;
+    }
 
-	// Open the device, the best source for serial terminal handling is:
-	// http://www.cmrr.umn.edu/~strupp/serial.html
-	bctx->fd = open (bctx->device, O_RDWR | O_NOCTTY | O_NDELAY);
-	if (bctx->fd < 0)
-	{
-		err(ctx, "Cannot open device %s\n", bctx->device);
-		return -1;
-	}
+    /* Open the device, the best source for serial terminal handling is:
+     * http://www.cmrr.umn.edu/~strupp/serial.html */
+    bctx->fd = open (bctx->device, O_RDWR | O_NOCTTY | O_NDELAY);
+    if (bctx->fd < 0)
+    {
+        err(ctx, "Cannot open device %s\n", bctx->device);
+        return -1;
+    }
 
-	// Translate the integer speed to the proper define value for termios
-	int baud = speed_lookup(bctx->speed);
-	if (baud == -1)
-	{
-		err(ctx, "Speed not known: %d."
-				"Custom baud rates are not supported currently\n", baud);
-		return -1;
-	}
+    /* Translate the integer speed to the proper define value for termios */
+    int baud = speed_lookup(bctx->speed);
+    if (baud == -1)
+    {
+        err(ctx, "Speed not known: %d."
+            "Custom baud rates are not supported currently\n", baud);
+        return -1;
+    }
 
-	// Get the attributes of the terminal to manipulate them
-	struct termios tty;
-	memset (&tty, 0, sizeof tty);
-	if (tcgetattr (bctx->fd, &tty) != 0)
-	{
-		err(ctx, "Cannot get device attributes\n");
-		return -1;
-	}
+    /* Get the attributes of the terminal to manipulate them */
+    struct termios tty;
+    memset (&tty, 0, sizeof tty);
+    if (tcgetattr (bctx->fd, &tty) != 0)
+    {
+        err(ctx, "Cannot get device attributes\n");
+        return -1;
+    }
 
-	// Set line speed
-	cfsetospeed (&tty, baud);
-	cfsetispeed (&tty, baud);
+    /* Set line speed */
+    cfsetospeed (&tty, baud);
+    cfsetispeed (&tty, baud);
 
-	// 8N1
-	tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
-	tty.c_cflag &= ~(PARENB | PARODD);
-	tty.c_cflag &= ~CSTOPB;
-	// Hardware flow control
-	tty.c_cflag |= (CLOCAL | CREAD);
-	tty.c_cflag |= CRTSCTS;
+    /* 8N1 */
+    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
+    tty.c_cflag &= ~(PARENB | PARODD);
+    tty.c_cflag &= ~CSTOPB;
+    /* Hardware flow control */
+    tty.c_cflag |= (CLOCAL | CREAD);
+    tty.c_cflag |= CRTSCTS;
 
-	tty.c_cc[VMIN]  = 0; // read doesn't block
-	tty.c_cc[VTIME] = 5; // 0.5 seconds read timeout
+    /* read doesn't block */
+    tty.c_cc[VMIN]  = 0; 
+    /* 0.5 seconds read timeout */
+    tty.c_cc[VTIME] = 5;
 
-	// Raw
-	tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    /* Raw */
+    tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-	// No input handling
-	tty.c_iflag = 0;
-	// No output handling
-	tty.c_oflag = 0;
+    /* No input handling */
+    tty.c_iflag = 0;
+    /* No output handling */
+    tty.c_oflag = 0;
 
-	// Write the changed attributes
-	if (tcsetattr (bctx->fd, TCSANOW, &tty) != 0)
-	{
-		err(ctx, "Cannot set attributes\n");
-		return -1;
-	}
+    /* Write the changed attributes */
+    if (tcsetattr (bctx->fd, TCSANOW, &tty) != 0)
+    {
+        err(ctx, "Cannot set attributes\n");
+        return -1;
+    }
 
-	// @todo
-	// When the default or user-defined speed does not work, we try
-	// to autodetect the line speed. We try from a given set of
-	// speeds and take the first one that detects. Unfortunately, we
-	// can still get false positives as the match pattern is 0xfe.
-	// This pattern is not so easy to distinguish as it only has one
-	// low bit in the byte.
-	int autodetect = 0; // We entered autodetect
-	// Options to autodetect
-	int autodetect_candidates[] = { 4000000, 3000000, 2000000, 1000000,
-			500000, 230400, 115200, 57600, 38400, 19200, 9600, 0 };
-	// Current autodetect (from autodetect_candidates)
-	int *autodetect_try = 0;
-	// Indicate if we successfully connected
-	int success = 0;
+    /* @todo
+     * When the default or user-defined speed does not work, we try
+     * to autodetect the line speed. We try from a given set of
+     * speeds and take the first one that detects. Unfortunately, we
+     * can still get false positives as the match pattern is 0xfe.
+     * This pattern is not so easy to distinguish as it only has one
+     *  low bit in the byte. */
+    int autodetect = 0; /* We entered autodetect */
+    /* Options to autodetect */
+    int autodetect_candidates[] = { 4000000, 3000000, 2000000, 1000000,
+            500000, 230400, 115200, 57600, 38400, 19200, 9600, 0 };
+    /* Current autodetect (from autodetect_candidates) */
+    int *autodetect_try = 0;
+    /* Indicate if we successfully connected */
+    int success = 0;
 
-	do {
-		if (autodetect) {
-			// If we are in autodetecting, adopt speed
-			err(ctx, "Try speed: %d\n", *autodetect_try);
+    do {
+        if (autodetect) {
+            /* If we are in autodetecting, adopt speed */
+            err(ctx, "Try speed: %d\n", *autodetect_try);
 
-			memset (&tty, 0, sizeof tty);
-			if (tcgetattr (bctx->fd, &tty) != 0)
-			{
-				err(ctx, "Cannot get device attributes\n");
-				return -1;
-			}
+            memset (&tty, 0, sizeof tty);
+            if (tcgetattr (bctx->fd, &tty) != 0)
+            {
+                err(ctx, "Cannot get device attributes\n");
+                return -1;
+            }
 
-			bctx->speed = *autodetect_try;
+            bctx->speed = *autodetect_try;
 
-			baud = speed_lookup(bctx->speed);
-			cfsetospeed (&tty, baud);
-			cfsetispeed (&tty, baud);
+            baud = speed_lookup(bctx->speed);
+            cfsetospeed (&tty, baud);
+            cfsetispeed (&tty, baud);
 
-			if (tcsetattr (bctx->fd, TCSANOW, &tty) != 0)
-			{
-				err(ctx, "Cannot set attributes\n");
-				return -1;
-			}
-		}
+            if (tcsetattr (bctx->fd, TCSANOW, &tty) != 0)
+            {
+                err(ctx, "Cannot set attributes\n");
+                return -1;
+            }
+        }
 
-		// The ramp up sequence is
-		// - Set com_rst to high (flush buffers)
-		int rv;
-		rv = reset_com(bctx->fd, 1);
+        /* The ramp up sequence is */
+        /* - Set com_rst to high (flush buffers) */
+        int rv;
+        rv = reset_com(bctx->fd, 1);
 
-		// - Wait for one millisecond to be sure it is in there
-		usleep(1000);
+        /* - Wait for one millisecond to be sure it is in there */
+        usleep(1000);
 
-		// - Drain all remaining in intermediate buffers
-		do {
-			uint8_t buffer[128];
-			rv = read(bctx->fd, buffer, 128);
-		} while ((rv > 0) || ((rv == -1) && (errno == EAGAIN)));
+        /* - Drain all remaining in intermediate buffers */
+        do {
+            uint8_t buffer[128];
+            rv = read(bctx->fd, buffer, 128);
+        } while ((rv > 0) || ((rv == -1) && (errno == EAGAIN)));
 
-		// - De-assert reset
-		rv = reset_com(bctx->fd, 0);
+        /* - De-assert reset */
+        rv = reset_com(bctx->fd, 0);
 
-		// - Read the debt
-		//   We do this just to check the read and if we have detected
-		//   the correct speed
-		{
-			uint8_t debt[2];
-			size_t size_read;
+        /* - Read the debt
+         *   We do this just to check the read and if we have detected
+         *   the correct speed */
+        {
+            uint8_t debt[2];
+            size_t size_read;
 
-			// Do a blocking read with 1s timeout to settle
-			rv = read_blocking(bctx->fd, debt, 2, &size_read, 1000);
-			if (rv == -ETIMEDOUT) {
-				// Timeout means we did not read
-				success = 0;
-			} else if ((debt[0] != 0xfe) && (debt[1] != 0xfe)) {
-				// This is we neither had the credit message as first
-				// nor as second word. We check the second as we
-				// observed a leading garbage word on some platforms
-				// with fresh bitstreams
-				success = 0;
-			} else {
-				// Else it seems we have the right speed
-				success = 1;
-			}
-		}
+            /* Do a blocking read with 1s timeout to settle */
+            rv = read_blocking(bctx->fd, debt, 2, &size_read, 1000);
+            if (rv == -ETIMEDOUT) {
+                /* Timeout means we did not read */
+                success = 0;
+            } else if ((debt[0] != 0xfe) && (debt[1] != 0xfe)) {
+                /* This is we neither had the credit message as first
+                 * nor as second word. We check the second as we
+                 * observed a leading garbage word on some platforms
+                 * with fresh bitstreams */
+                success = 0;
+            } else {
+                /* Else it seems we have the right speed */
+                success = 1;
+            }
+        }
 
-		if (!success) {
-			// If the ramp up was not successfull
-			if (!autodetect) {
-				// Activate autodetect if we were not in it
-				err(ctx, "Given speed %d did not work with device. "
-						"Try autodetect..\n", bctx->speed);
-				autodetect = 1;
-				autodetect_try = autodetect_candidates;
-				continue;
-			} else {
-				// Increment autodetect otherwise or abort if we
-				// checked all
-				autodetect_try++;
-				if (*autodetect_try == 0) {
-					err(ctx, "Could not autodetect baud rate.\n");
-					return -1;
-				}
-			}
-		}
-	} while (!success);
+        if (!success) {
+            /* If the ramp up was not successfull */
+            if (!autodetect) {
+                /* Activate autodetect if we were not in it */
+                err(ctx, "Given speed %d did not work with device. "
+                    "Try autodetect..\n", bctx->speed);
+                autodetect = 1;
+                autodetect_try = autodetect_candidates;
+                continue;
+            } else {
+                /* Increment autodetect otherwise or abort if we
+                 checked all */
+                autodetect_try++;
+                if (*autodetect_try == 0) {
+                    err(ctx, "Could not autodetect baud rate.\n");
+                    return -1;
+                }
+            }
+        }
+    } while (!success);
 
-	// Reset the communication logic, state and data buffers
-	reset(bctx);
+    /* Reset the communication logic, state and data buffers */
+    reset(bctx);
 
-	// Start the communication thread. From here on all read and write
-	// operations go to the circular buffers, and the thread handles
-	// the device interface.
-	pthread_create(&bctx->thread, 0, thread_func, bctx);
+    /* Start the communication thread. From here on all read and write
+     * operations go to the circular buffers, and the thread handles
+     * the device interface. */
+    pthread_create(&bctx->thread, 0, thread_func, bctx);
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -455,18 +467,18 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
  */
 int gb_uart_close(struct glip_ctx *ctx)
 {
-	void* rv;
-	struct glip_backend_ctx *bctx = ctx->backend_ctx;
+    void* rv;
+    struct glip_backend_ctx *bctx = ctx->backend_ctx;
 
-	// Send termination request to thread
-	bctx->term_request = 1;
+    /* Send termination request to thread */
+    bctx->term_request = 1;
 
-	pthread_cancel(bctx->thread);
-	pthread_join(bctx->thread, &rv);
+    pthread_cancel(bctx->thread);
+    pthread_join(bctx->thread, &rv);
 
-	close(bctx->fd);
+    close(bctx->fd);
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -476,17 +488,17 @@ int gb_uart_close(struct glip_ctx *ctx)
  */
 int gb_uart_logic_reset(struct glip_ctx *ctx)
 {
-	struct glip_backend_ctx *bctx = ctx->backend_ctx;
+    struct glip_backend_ctx *bctx = ctx->backend_ctx;
 
-	assert(bctx->reset_request == 0);
+    assert(bctx->reset_request == 0);
 
-	// Trigger request in thread
-	bctx->reset_request = 1;
+    /* Trigger request in thread */
+    bctx->reset_request = 1;
 
-	// Wait until completed
-	while (bctx->reset_request == 1) {}
+    /* Wait until completed */
+    while (bctx->reset_request == 1) {}
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -504,25 +516,27 @@ int gb_uart_logic_reset(struct glip_ctx *ctx)
  * @see glip_read()
  */
 int gb_uart_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
-		uint8_t *data, size_t *size_read)
+                 uint8_t *data, size_t *size_read)
 {
-	assert(channel == 0);
+    if (channel > 0) {
+        return -1;
+    }
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-    // Check the fill level
+    /* Check the fill level */
     size_t fill_level = cbuf_fill_level(bctx->input_buffer);
-    // We read as much as possible up to size
+    /* We read as much as possible up to size */
     size_t size_read_req = min(fill_level, size);
 
-    // Read from buffer
+    /* Read from buffer */
     int rv = cbuf_read(bctx->input_buffer, data, size_read_req);
     if (rv < 0) {
         err(ctx, "Unable to get data from read buffer, rv = %d\n", rv);
         return -1;
     }
 
-    // Update actual read information
+    /* Update actual read information */
     *size_read = size_read_req;
 
     return 0;
@@ -545,11 +559,15 @@ int gb_uart_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @see glip_read_b()
  */
 int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
-		uint8_t *data, size_t *size_read, unsigned int timeout)
+                   uint8_t *data, size_t *size_read, unsigned int timeout)
 {
     int rv;
     struct glip_backend_ctx *bctx = ctx->backend_ctx;
     struct timespec ts;
+
+    if (channel > 0) {
+        return -1;
+    }
 
     if (size > bctx->buffer_size) {
         /*
@@ -613,9 +631,12 @@ int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @see glip_write()
  */
 int gb_uart_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
-		uint8_t *data, size_t *size_written)
+                  uint8_t *data, size_t *size_written)
 {
-	assert(channel == 0);
+    if (channel > 0) {
+        return -1;
+    }
+
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
     unsigned int buf_size_free = cbuf_free_level(bctx->output_buffer);
@@ -643,9 +664,11 @@ int gb_uart_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @see glip_write_b()
  */
 int gb_uart_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
-		uint8_t *data, size_t *size_written, unsigned int timeout)
+                    uint8_t *data, size_t *size_written, unsigned int timeout)
 {
-	assert(channel == 0);
+    if (channel > 0) {
+        return -1;
+    }
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
     struct timespec ts;
@@ -659,7 +682,7 @@ int gb_uart_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
     while (1) {
         size_t size_done_tmp = 0;
         gb_uart_write(ctx, channel, size - size_done, &data[size_done],
-                            &size_done_tmp);
+                      &size_done_tmp);
         size_done += size_done_tmp;
 
         if (size_done == size) {
@@ -693,7 +716,7 @@ int gb_uart_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
  */
 unsigned int gb_uart_get_channel_count(struct glip_ctx *ctx)
 {
-	return 1;
+    return 1;
 }
 
 /**
@@ -706,389 +729,400 @@ unsigned int gb_uart_get_channel_count(struct glip_ctx *ctx)
  */
 unsigned int gb_uart_get_fifo_width(struct glip_ctx *ctx)
 {
-	return 1;
+    return 1;
 }
 
-// Translate an integer to the macro
+/* Translate an integer to the macro */
 #define KNOWN(x) case x: return B##x
 
-static int speed_lookup(int speed) {
-	switch(speed) {
-	KNOWN(50);
-	KNOWN(75);
-	KNOWN(110);
-	KNOWN(134);
-	KNOWN(150);
-	KNOWN(200);
-	KNOWN(300);
-	KNOWN(600);
-	KNOWN(1200);
-	KNOWN(1800);
-	KNOWN(2400);
-	KNOWN(4800);
-	KNOWN(9600);
-	KNOWN(19200);
-	KNOWN(38400);
-	KNOWN(57600);
-	KNOWN(115200);
-	KNOWN(230400);
-	KNOWN(460800);
-	KNOWN(500000);
-	KNOWN(576000);
-	KNOWN(921600);
-	KNOWN(1000000);
-	KNOWN(1152000);
-	KNOWN(1500000);
-	KNOWN(2000000);
-	KNOWN(2500000);
-	KNOWN(3000000);
-	KNOWN(3500000);
-	KNOWN(4000000);
-	default: return -1;
-	}
+static int speed_lookup(int speed)
+{
+    switch(speed) {
+    KNOWN(50);
+    KNOWN(75);
+    KNOWN(110);
+    KNOWN(134);
+    KNOWN(150);
+    KNOWN(200);
+    KNOWN(300);
+    KNOWN(600);
+    KNOWN(1200);
+    KNOWN(1800);
+    KNOWN(2400);
+    KNOWN(4800);
+    KNOWN(9600);
+    KNOWN(19200);
+    KNOWN(38400);
+    KNOWN(57600);
+    KNOWN(115200);
+    KNOWN(230400);
+    KNOWN(460800);
+    KNOWN(500000);
+    KNOWN(576000);
+    KNOWN(921600);
+    KNOWN(1000000);
+    KNOWN(1152000);
+    KNOWN(1500000);
+    KNOWN(2000000);
+    KNOWN(2500000);
+    KNOWN(3000000);
+    KNOWN(3500000);
+    KNOWN(4000000);
+    default: return -1;
+    }
 }
 
-static int reset_logic(int fd, uint8_t state) {
-	uint8_t reset[2];
-	size_t written;
+static int reset_logic(int fd, uint8_t state)
+{
+    uint8_t reset[2];
+    size_t written;
 
-	reset[0] = 0xfe;
-	reset[1] = ((state & 0x1) << 1) | 0x81;
+    reset[0] = 0xfe;
+    reset[1] = ((state & 0x1) << 1) | 0x81;
 
-	return write_blocking(fd, reset, 2, &written, 0);
+    return write_blocking(fd, reset, 2, &written, 0);
 }
 
-static int reset_com(int fd, uint8_t state) {
-	uint8_t reset[2];
-	size_t written;
+static int reset_com(int fd, uint8_t state)
+{
+    uint8_t reset[2];
+    size_t written;
 
-	reset[0] = 0xfe;
-	reset[1] = ((state & 0x1) << 1) | 0x85;
+    reset[0] = 0xfe;
+    reset[1] = ((state & 0x1) << 1) | 0x85;
 
-	return write_blocking(fd, reset, 2, &written, 0);
+    return write_blocking(fd, reset, 2, &written, 0);
 }
 
 int total = 0;
 
-void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer, size_t size) {
-	size_t actual, i;
-	int rv;
+void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer, size_t size)
+{
+    size_t actual, i;
+    int rv;
 
-	for (i = 0; i < size; i++) {
-		if (buffer[i] == 0xfe) {
-			// Check if next item is already in buffer
-			if ((i + 1) < size) {
-				if (buffer[i+1] == 0xfe) {
-					// If this is the data word, write it
-					assert(ctx->credit > 0);
-					rv = cbuf_write(ctx->input_buffer, &buffer[i], 1);
-					assert(rv == 0);
-					ctx->credit--;
-				} else {
-					// This is the first of the credit message
-					// Check if the next is also in buffer
-					if ((i + 2) < size) {
-						update_debt(ctx, buffer[i+1], buffer[i+2]);
-						// Increment the counter for the second extra word
-						i++;
-					} else {
-						// We have reached the end of the buffer, it is
-						// safe to use the begin of buffer for the credit
-						rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
-						assert(rv == 0);
-						update_debt(ctx, buffer[i+1], buffer[0]);
-					}
-				}
-				// Increment the counter for the first extra word
-				i++;
-			} else {
-				// If the next item was not in buffer, read another one,
-				// we can now reuse the buffer
-				rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
-				assert(rv == 0);
+    for (i = 0; i < size; i++) {
+        if (buffer[i] == 0xfe) {
+            /* Check if next item is already in buffer */
+            if ((i + 1) < size) {
+                if (buffer[i+1] == 0xfe) {
+                    /* If this is the data word, write it */
+                    assert(ctx->credit > 0);
+                    rv = cbuf_write(ctx->input_buffer, &buffer[i], 1);
+                    assert(rv == 0);
+                    ctx->credit--;
+                } else {
+                    /* This is the first of the credit message
+                     * Check if the next is also in buffer */
+                    if ((i + 2) < size) {
+                        update_debt(ctx, buffer[i+1], buffer[i+2]);
+                        /* Increment the counter for the second extra word */
+                        i++;
+                    } else {
+                        /* We have reached the end of the buffer, it is
+                         * safe to use the begin of buffer for the credit */
+                        rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
+                        assert(rv == 0);
+                        update_debt(ctx, buffer[i+1], buffer[0]);
+                    }
+                }
+                /* Increment the counter for the first extra word */
+                i++;
+            } else {
+                /* If the next item was not in buffer, read another one,
+                 * we can now reuse the buffer */
+                rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
+                assert(rv == 0);
 
-				if (buffer[0] == 0xfe) {
-					// That was the data word, write it
-					assert(ctx->credit > 0);
-					rv = cbuf_write(ctx->input_buffer, &buffer[0], 1);
-					assert(rv == 0);
-					ctx->credit--;
-				} else {
-					// We received a credit, read the next
-					rv = read_blocking(ctx->fd, &buffer[1], 1, &actual, 0);
-					assert(rv == 0);
-					update_debt(ctx, buffer[0], buffer[1]);
-				}
-			}
-		} else {
-			// This is a data word
-			assert(ctx->credit > 0);
-			rv = cbuf_write(ctx->input_buffer, &buffer[i], 1);
-			assert(rv == 0);
-			ctx->credit--;
-		}
-	}
+                if (buffer[0] == 0xfe) {
+                    /* That was the data word, write it */
+                    assert(ctx->credit > 0);
+                    rv = cbuf_write(ctx->input_buffer, &buffer[0], 1);
+                    assert(rv == 0);
+                    ctx->credit--;
+                } else {
+                    /* We received a credit, read the next */
+                    rv = read_blocking(ctx->fd, &buffer[1], 1, &actual, 0);
+                    assert(rv == 0);
+                    update_debt(ctx, buffer[0], buffer[1]);
+                }
+            }
+        } else {
+            /* This is a data word */
+            assert(ctx->credit > 0);
+            rv = cbuf_write(ctx->input_buffer, &buffer[i], 1);
+            assert(rv == 0);
+            ctx->credit--;
+        }
+    }
 }
 
 int wtotal = 0;
 
-void* thread_func(void *arg) {
-	uint8_t buffer[TMP_BUFFER_SIZE];
-	size_t avail, actual;
-	int rv;
+void* thread_func(void *arg)
+{
+    uint8_t buffer[TMP_BUFFER_SIZE];
+    size_t avail, actual;
+    int rv;
 
-	struct glip_backend_ctx *ctx = (struct glip_backend_ctx*) arg;
+    struct glip_backend_ctx *ctx = (struct glip_backend_ctx*) arg;
 
-	while (1) {
-		// Check for reset
-		if (ctx->reset_request == 1) {
-			rv = reset_logic(ctx->fd, 1);
-			assert(rv == 0);
+    while (1) {
+        /* Check for reset */
+        if (ctx->reset_request == 1) {
+            rv = reset_logic(ctx->fd, 1);
+            assert(rv == 0);
 
-			rv = reset_logic(ctx->fd, 0);
-			assert(rv == 0);
-			ctx->reset_request = 0;
-		}
+            rv = reset_logic(ctx->fd, 0);
+            assert(rv == 0);
+            ctx->reset_request = 0;
+        }
 
-		if (ctx->term_request) {
-			// Termination requested from user
-			break;
-		}
+        if (ctx->term_request) {
+            /* Termination requested from user */
+            break;
+        }
 
-		// Read
-		avail = cbuf_free_level(ctx->input_buffer);
-		if (avail == 0) {
-			// We are only expecting a credit message now
-			// Check if there is one
-			rv = read(ctx->fd, buffer, 1);
-			if (rv == 1) {
-				assert(buffer[0] == 0xfe);
-				rv = read_blocking(ctx->fd, buffer, 2, &actual, 0);
-				assert(rv == 0);
-				assert(actual == 2);
-				update_debt(ctx, buffer[0], buffer[1]);
-			}
-		} else {
-			// Read a chunk of data if the circular buffer can accept it
-			size_t size = min(avail, TMP_BUFFER_SIZE);
-			rv = read(ctx->fd, buffer, size);
-			if (rv > 0) {
-				parse_buffer(ctx, buffer, rv);
-			}
-		}
+        /* Read */
+        avail = cbuf_free_level(ctx->input_buffer);
+        if (avail == 0) {
+            /* We are only expecting a credit message now
+             * Check if there is one */
+            rv = read(ctx->fd, buffer, 1);
+            if (rv == 1) {
+                assert(buffer[0] == 0xfe);
+                rv = read_blocking(ctx->fd, buffer, 2, &actual, 0);
+                assert(rv == 0);
+                assert(actual == 2);
+                update_debt(ctx, buffer[0], buffer[1]);
+            }
+        } else {
+            /* Read a chunk of data if the circular buffer can accept it */
+            size_t size = min(avail, TMP_BUFFER_SIZE);
+            rv = read(ctx->fd, buffer, size);
+            if (rv > 0) {
+                parse_buffer(ctx, buffer, rv);
+            }
+        }
 
-		// Write
-		if (ctx->debt > 0) {
-			size_t size = min(ctx->debt, TMP_BUFFER_SIZE);
-			avail = cbuf_fill_level(ctx->output_buffer);
-			if (avail > 0) {
-				// If there is data to be transfered, take the smallest
-				// number of available words, the debt size and the
-				// size of the temporaty buffer as transfer size
-				size = min(avail, size);
+        /* Write */
+        if (ctx->debt > 0) {
+            size_t size = min(ctx->debt, TMP_BUFFER_SIZE);
+            avail = cbuf_fill_level(ctx->output_buffer);
+            if (avail > 0) {
+                /* If there is data to be transfered, take the smallest
+                 * number of available words, the debt size and the
+                 * size of the temporaty buffer as transfer size */
+                size = min(avail, size);
 
-				// Read the words
-				assert(cbuf_read(ctx->output_buffer, buffer, size) != -EINVAL);
+                /* Read the words */
+                assert(cbuf_read(ctx->output_buffer, buffer, size) != -EINVAL);
 
-				for (size_t i = 0; i < size; i++) {
-					// Write each word
-					rv = write_blocking(ctx->fd, &buffer[i], 1, &actual, 0);
-					assert(rv == 0);
-					assert(actual == 1);
-					if (buffer[i] == 0xfe) {
-						// .. and repeat the marker word 0xfe
-						rv = write_blocking(ctx->fd, &buffer[i], 1, &actual, 0);
-						assert(rv == 0);
-						assert(actual == 1);
-					}
-				}
-				ctx->debt -= size;
-			}
-		}
+                for (size_t i = 0; i < size; i++) {
+                    /* Write each word */
+                    rv = write_blocking(ctx->fd, &buffer[i], 1, &actual, 0);
+                    assert(rv == 0);
+                    assert(actual == 1);
+                    if (buffer[i] == 0xfe) {
+                        /* .. and repeat the marker word 0xfe */
+                        rv = write_blocking(ctx->fd, &buffer[i], 1, &actual, 0);
+                        assert(rv == 0);
+                        assert(actual == 1);
+                    }
+                }
+                ctx->debt -= size;
+            }
+        }
 
-		// Update credit if necessary
-		if (ctx->credit < ctx->buffer_size-UART_MAX_TRANCHE) {
-			// Give new credit
-			ctx->credit += UART_MAX_TRANCHE;
+        /* Update credit if necessary */
+        if (ctx->credit < ctx->buffer_size-UART_MAX_TRANCHE) {
+            /* Give new credit */
+            ctx->credit += UART_MAX_TRANCHE;
 
-			send_credit(ctx, UART_MAX_TRANCHE);
-		}
-	}
+            send_credit(ctx, UART_MAX_TRANCHE);
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 static int read_blocking(int fd, uint8_t *buffer, size_t size,
-		size_t *size_read, unsigned int timeout) {
-	struct timeval tval_start;
-	int rv;
+                         size_t *size_read, unsigned int timeout)
+{
+    struct timeval tval_start;
+    int rv;
 
-	*size_read = 0;
+    *size_read = 0;
 
-	if (timeout > 0) {
-		gettimeofday(&tval_start, NULL);
-	}
+    if (timeout > 0) {
+        gettimeofday(&tval_start, NULL);
+    }
 
-	do {
-		// Try to read as many as we still have left to read
-		rv = read(fd, &buffer[*size_read], size - *size_read);
+    do {
+        /* Try to read as many as we still have left to read */
+        rv = read(fd, &buffer[*size_read], size - *size_read);
 
-		if (rv >= 0) {
-			// Update number of read
-			*size_read += rv;
-		}
+        if (rv >= 0) {
+            /* Update number of read */
+            *size_read += rv;
+        }
 
-		if ((rv == -1) && (errno != EAGAIN)) {
-			// We tolerate EAGAIN errors, but cannot tolerate others
-			return errno;
-		}
+        if ((rv == -1) && (errno != EAGAIN)) {
+            /* We tolerate EAGAIN errors, but cannot tolerate others */
+            return -1;
+        }
 
-		if (timeout > 0) {
-			// Check if the timeout has occured
-			if (check_timeout(&tval_start, timeout)) {
-				return -ETIMEDOUT;
-			}
-		}
-	} while(*size_read != size);
+        if (timeout > 0) {
+            /* Check if the timeout has occured */
+            if (check_timeout(&tval_start, timeout)) {
+                return -ETIMEDOUT;
+            }
+        }
+    } while(*size_read != size);
 
-	return 0;
+    return 0;
 }
 
 static int write_blocking(int fd, uint8_t *buffer, size_t size,
-		size_t *size_written, unsigned int timeout) {
-	struct timeval tval_start;
-	int rv;
+                          size_t *size_written, unsigned int timeout)
+{
+    struct timeval tval_start;
+    int rv;
 
-	*size_written = 0;
+    *size_written = 0;
 
-	if (timeout > 0) {
-		gettimeofday(&tval_start, NULL);
-	}
+    if (timeout > 0) {
+        gettimeofday(&tval_start, NULL);
+    }
 
-	do {
-		// Write as many as possible from remaining
-		rv = write(fd, &buffer[*size_written], size - *size_written);
+    do {
+        /* Write as many as possible from remaining */
+        rv = write(fd, &buffer[*size_written], size - *size_written);
 
-		if (rv >= 0) {
-			// Update number of actually written
-			*size_written += rv;
-		}
+        if (rv >= 0) {
+            /* Update number of actually written */
+            *size_written += rv;
+        }
 
-		if ((rv == -1) && (errno != EAGAIN)) {
-			// Cannot tolerate errors other then EAGAIN
-			return errno;
-		}
+        if ((rv == -1) && (errno != EAGAIN)) {
+            /* Cannot tolerate errors other then EAGAIN */
+            return -1;
+        }
 
-		if (timeout > 0) {
-			// Check for a timeout
-			if (check_timeout(&tval_start, timeout)) {
-				return -ETIMEDOUT;
-			}
-		}
-	} while(*size_written != size);
+        if (timeout > 0) {
+            /* Check for a timeout */
+            if (check_timeout(&tval_start, timeout)) {
+                return -ETIMEDOUT;
+            }
+        }
+    } while(*size_written != size);
 
-	return 0;
+    return 0;
 }
 
-static int check_timeout(struct timeval *start, unsigned long ms) {
-	struct timeval tval_current, tval_diff;
-	gettimeofday(&tval_current, NULL);
+static int check_timeout(struct timeval *start, unsigned long ms)
+{
+    struct timeval tval_current, tval_diff;
+    gettimeofday(&tval_current, NULL);
 
-	// Calculate the difference
-	tval_diff.tv_sec = tval_current.tv_sec - start->tv_sec;
-	tval_diff.tv_usec = tval_current.tv_usec - start->tv_usec;
+    /* Calculate the difference */
+    tval_diff.tv_sec = tval_current.tv_sec - start->tv_sec;
+    tval_diff.tv_usec = tval_current.tv_usec - start->tv_usec;
 
-	// Microsecond overflows increase the second
-	if (tval_current.tv_usec < start->tv_usec) {
-		tval_diff.tv_sec += 1;
-		tval_diff.tv_usec += 1000000;
-	}
+    /* Microsecond overflows increase the second */
+    if (tval_current.tv_usec < start->tv_usec) {
+        tval_diff.tv_sec += 1;
+        tval_diff.tv_usec += 1000000;
+    }
 
-	// Check if we reached the timeout
-	if ((tval_diff.tv_sec * 1000000 + tval_diff.tv_usec)
-			> ((signed) ms * 1000)) {
-		return -ETIMEDOUT;
-	}
+    /* Check if we reached the timeout */
+    if ((tval_diff.tv_sec * 1000000 + tval_diff.tv_usec)
+            > ((signed) ms * 1000)) {
+        return -ETIMEDOUT;
+    }
 
-	return 0;
+    return 0;
 }
 
 static void update_debt(struct glip_backend_ctx* ctx, uint8_t first,
-		uint8_t second) {
-	// Assemble new debt tranche from the two control datagrams
-	ctx->debt += (((first >> 1) & 0x7f) << 8) | second;
+                        uint8_t second)
+{
+    /* Assemble new debt tranche from the two control datagrams */
+    ctx->debt += (((first >> 1) & 0x7f) << 8) | second;
 }
 
-static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche) {
-	uint8_t credit[3];
-	size_t written;
+static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche)
+{
+    uint8_t credit[3];
+    size_t written;
 
-	// Assemble the message datagrams
-	credit[0] = 0xfe;
-	credit[1] = 0x1 | ((tranche >> 8) << 1);
-	credit[2] = tranche & 0xff;
+    /* Assemble the message datagrams */
+    credit[0] = 0xfe;
+    credit[1] = 0x1 | ((tranche >> 8) << 1);
+    credit[2] = tranche & 0xff;
 
-	if (write_blocking(ctx->fd, credit, 3, &written, 0) != 0) {
-		return -1;
-	}
+    if (write_blocking(ctx->fd, credit, 3, &written, 0) != 0) {
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }
 
-static int reset(struct glip_backend_ctx* ctx) {
-	int rv;
+static int reset(struct glip_backend_ctx* ctx)
+{
+    int rv;
 
-	// Assert reset
-	rv = reset_com(ctx->fd, 1);
-	if (rv != 0) {
-		return -1;
-	}
+    /* Assert reset */
+    rv = reset_com(ctx->fd, 1);
+    if (rv != 0) {
+        return -1;
+    }
 
-	// Drain the interface
-	uint8_t buffer[16];
-	do {
-		rv = read(ctx->fd, buffer, 16);
-	} while (rv > 0);
+    /* Drain the interface */
+    uint8_t buffer[16];
+    do {
+        rv = read(ctx->fd, buffer, 16);
+    } while (rv > 0);
 
-	// De-assert reset
-	rv = reset_com(ctx->fd, 0);
-	if (rv != 0) {
-		return -1;
-	}
+    /* De-assert reset */
+    rv = reset_com(ctx->fd, 0);
+    if (rv != 0) {
+        return -1;
+    }
 
-	// Clear the buffers
-	rv = cbuf_discard(ctx->input_buffer, cbuf_fill_level(ctx->input_buffer));
-	assert(rv == 0);
+    /* Clear the buffers */
+    rv = cbuf_discard(ctx->input_buffer, cbuf_fill_level(ctx->input_buffer));
+    assert(rv == 0);
 
-	rv = cbuf_discard(ctx->output_buffer, cbuf_fill_level(ctx->output_buffer));
-	assert(rv == 0);
+    rv = cbuf_discard(ctx->output_buffer, cbuf_fill_level(ctx->output_buffer));
+    assert(rv == 0);
 
-	// Reset values to defaults
-	ctx->credit = UART_MAX_TRANCHE;
-	ctx->debt = 0;
+    /* Reset values to defaults */
+    ctx->credit = UART_MAX_TRANCHE;
+    ctx->debt = 0;
 
-	// Send our initial credit tranche to the logic
-	send_credit(ctx, UART_MAX_TRANCHE);
+    /* Send our initial credit tranche to the logic */
+    send_credit(ctx, UART_MAX_TRANCHE);
 
-	// Read the debt from the logic
-	uint8_t debt[3];
-	size_t read;
-	rv = read_blocking(ctx->fd, debt, 3, &read, 0);
-	assert(rv == 0);
+    /* Read the debt from the logic */
+    uint8_t debt[3];
+    size_t read;
+    rv = read_blocking(ctx->fd, debt, 3, &read, 0);
+    assert(rv == 0);
 
-	// Strangely, the UART sometimes returns a trash byte on the first
-	// access after the bitstream was loaded. Ignore this.
-	if (debt[0] != 0xfe) {
-		debt[0] = debt[1];
-		debt[1] = debt[2];
+    /* Strangely, the UART sometimes returns a trash byte on the first
+     * access after the bitstream was loaded. Ignore this. */
+    if (debt[0] != 0xfe) {
+        debt[0] = debt[1];
+        debt[1] = debt[2];
 
-		rv = read_blocking(ctx->fd, &debt[2], 1, &read, 0);
-		assert(rv == 0);
-	}
+        rv = read_blocking(ctx->fd, &debt[2], 1, &read, 0);
+        assert(rv == 0);
+    }
 
-	assert(debt[0] == 0xfe);
+    assert(debt[0] == 0xfe);
 
-	update_debt(ctx, debt[1], debt[2]);
+    update_debt(ctx, debt[1], debt[2]);
 
-	return 0;
+    return 0;
 }

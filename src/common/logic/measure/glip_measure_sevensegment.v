@@ -39,33 +39,33 @@ module glip_measure_sevensegment
     parameter OFFSET = 0,
     parameter STEP = 1)
   (
-   input 		 clk,
-   input 		 rst,
+   input                 clk,
+   input                 rst,
    
-   input 		 trigger,
+   input                 trigger,
    
    output [DIGITS*7-1:0] digits,
    
-   output 		 overflow
+   output                overflow
    );
 
-   wire [DIGITS*4-1:0] 	 bcd_digits;
+   wire [DIGITS*4-1:0]   bcd_digits;
    
    glip_measure
      #(.FREQ(FREQ), .DIGITS(DIGITS), .OFFSET(OFFSET), .STEP(STEP))
      u_measure(.clk      (clk),
-	       .rst      (rst),
-	       .trigger  (trigger),
-	       .digits   (bcd_digits),
-	       .overflow (overflow));
+           .rst      (rst),
+           .trigger  (trigger),
+           .digits   (bcd_digits),
+           .overflow (overflow));
 
    genvar i;
 
    generate
       for (i = 0; i < DIGITS; i = i + 1) begin
-	 sevensegment
-	       u_seg(.in  (bcd_digits[(i+1)*4-1:i*4]),
-		     .out (digits[(i+1)*7-1:i*7]));
+     sevensegment
+           u_seg(.in  (bcd_digits[(i+1)*4-1:i*4]),
+             .out (digits[(i+1)*7-1:i*7]));
       end
    endgenerate
    
