@@ -108,9 +108,9 @@ AS_IF([test "x$enable_cypressfx2" = "xyes"], [
 
 
 AC_ARG_ENABLE([tcp],
-    AS_HELP_STRING([--enable-tcp], [enable TCP backend @<:@default=disabled@:>@]),
+    AS_HELP_STRING([--enable-tcp], [enable TCP backend @<:@default=enabled@:>@]),
     [],
-    [enable_tcp=no])
+    [enable_tcp=yes])
 AM_CONDITIONAL([BACKEND_TCP], [test "x$enable_tcp" = "xyes"])
 
 GLIP_CONFIG_BACKEND(tcp, TCP)
