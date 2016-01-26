@@ -84,9 +84,9 @@ module glip_tcp_toplevel
 
          connected = glip_tcp_connected(obj);
          if (connected > 0) begin
-            com_rst = 1'b1;
-         end else begin
             com_rst = 1'b0;
+         end else begin
+            com_rst = 1'b1;
          end
          
          state = glip_tcp_next_cycle(obj);
