@@ -75,7 +75,6 @@ module glip_tcp_toplevel
    
    always @(negedge clk_logic) begin
       if (rst) begin
-         glip_tcp_reset(obj);
          logic_rst = 0;
          com_rst = 0;           
       end else begin
