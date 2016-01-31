@@ -394,7 +394,7 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
         do {
             uint8_t buffer[128];
             rv = read(bctx->fd, buffer, 128);
-        } while ((rv > 0) || ((rv == -1) && (errno == EAGAIN)));
+        } while (rv > 0);
 
         /* - De-assert reset */
         rv = reset_com(bctx->fd, 0);
