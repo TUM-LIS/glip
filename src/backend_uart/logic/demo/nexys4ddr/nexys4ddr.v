@@ -55,18 +55,20 @@ module nexys4ddr
    output reg   redled
    );
 
+   parameter WIDTH = 8;
+
    localparam FREQ = 100000000;
    localparam BAUD = 3000000;
 
    wire         rst;
    assign rst = ~rstn;
 
-   wire [7:0]   in_data;
-   wire         in_valid;
-   reg          in_ready;
-   reg [7:0]    out_data;
-   reg          out_valid;
-   wire         out_ready;
+   wire [WIDTH-1:0] in_data;
+   wire             in_valid;
+   reg              in_ready;
+   reg [WIDTH-1:0]  out_data;
+   reg              out_valid;
+   wire             out_ready;
 
    always @(*) begin
       casez(switch[1:0])
@@ -108,7 +110,8 @@ module nexys4ddr
 
    glip_uart_toplevel
      #(.FREQ(FREQ),
-       .BAUD(BAUD))
+       .BAUD(BAUD),
+       .WIDTH(WIDTH))
    u_uart(.clk_io         (clk),
           .clk_logic      (clk),
           .rst            (rst),
@@ -128,9 +131,9 @@ module nexys4ddr
 
    wire [8*7-1:0] digits;
    wire           overflow;
-   
+
    glip_measure_sevensegment
-     #(.FREQ(FREQ), .DIGITS(8), .OFFSET(0), .STEP(4'd1))
+     #(.FREQ(FREQ), .DIGITS(8), .OFFSET(0), .STEP(WIDTH/8))
    u_measure(.clk      (clk),
              .rst      (logic_rst),
              .trigger  ((in_valid & in_ready) | (out_valid & out_ready)),

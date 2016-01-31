@@ -41,34 +41,42 @@
 module glip_uart_toplevel
   #(parameter FREQ = 32'hx,
     parameter BAUD = 115200,
+    parameter WIDTH = 8,
     parameter XILINX_TARGET_DEVICE = "7SERIES")
    (
     // Clock & Reset
-    input        clk_io,
-    input        clk_logic,
-    input        rst,
+    input              clk_io,
+    input              clk_logic,
+    input              rst,
 
     // GLIP FIFO Interface
-    input [7:0]  fifo_out_data,
-    input        fifo_out_valid,
-    output       fifo_out_ready,
-    output [7:0] fifo_in_data,
-    output       fifo_in_valid,
-    input        fifo_in_ready,
+    input [WIDTH-1:0]  fifo_out_data,
+    input              fifo_out_valid,
+    output             fifo_out_ready,
+    output [WIDTH-1:0] fifo_in_data,
+    output             fifo_in_valid,
+    input              fifo_in_ready,
 
     // GLIP Control Interface
-    output       logic_rst,
-    output       com_rst,
+    output             logic_rst,
+    output             com_rst,
     
     // UART Interface
-    input        uart_rx,
-    output       uart_tx,
-    input        uart_cts,
-    output       uart_rts,
+    input              uart_rx,
+    output             uart_tx,
+    input              uart_cts,
+    output             uart_rts,
     
     // Error signal if failure on the line
-    output reg   error
+    output reg         error
     );
+
+   wire [7:0]     fifo_out_data_scale;
+   wire           fifo_out_valid_scale;
+   wire           fifo_out_ready_scale;
+   wire [7:0]     fifo_in_data_scale;
+   wire           fifo_in_valid_scale;
+   wire           fifo_in_ready_scale;
 
    wire [7:0]    ingress_in_data;
    wire          ingress_in_valid;
@@ -99,9 +107,9 @@ module glip_uart_toplevel
    assign ingress_out_ready = ~in_buffer_almost_full;
    assign ingress_buffer_valid = ~in_buffer_empty;
    assign ingress_buffer_ready = ~in_fifo_full;
-   assign fifo_in_valid = ~in_fifo_empty;
+   assign fifo_in_valid_scale = ~in_fifo_empty;
    assign egress_in_valid = ~out_fifo_empty;
-   assign fifo_out_ready = ~out_fifo_full;
+   assign fifo_out_ready_scale = ~out_fifo_full;
 
    assign uart_rts = 0;
 
@@ -115,6 +123,40 @@ module glip_uart_toplevel
          error <= error | rcv_error | control_error;
       end
    end
+
+   generate
+      if (WIDTH == 8) begin
+         assign fifo_out_data_scale = fifo_out_data;
+         assign fifo_out_valid_scale = fifo_out_valid;
+         assign fifo_out_ready = fifo_out_ready_scale;
+         assign fifo_in_data = fifo_in_data_scale;
+         assign fifo_in_valid = fifo_in_valid_scale;
+         assign fifo_in_ready_scale = fifo_in_ready;
+      end else if (WIDTH == 16) begin
+         glip_upscale
+           #(.IN_SIZE(8))
+         u_upscale(.clk       (clk_io),
+                   .rst       (com_rst),
+                   .in_data   (fifo_in_data_scale),
+                   .in_valid  (fifo_in_valid_scale),
+                   .in_ready  (fifo_in_ready_scale),
+                   .out_data  (fifo_in_data),
+                   .out_valid (fifo_in_valid),
+                   .out_ready (fifo_in_ready));
+
+         glip_downscale
+           #(.OUT_SIZE(8))
+         u_downscale(.clk       (clk_io),
+                     .rst       (com_rst),
+                     .in_data   (fifo_out_data),
+                     .in_valid  (fifo_out_valid),
+                     .in_ready  (fifo_out_ready),
+                     .out_data  (fifo_out_data_scale),
+                     .out_valid (fifo_out_valid_scale),
+                     .out_ready (fifo_out_ready_scale));
+
+      end
+   endgenerate
 
    /* glip_uart_control AUTO_TEMPLATE(
     .clk   (clk_io),
@@ -224,7 +266,7 @@ module glip_uart_toplevel
    in_fifo
      (.ALMOSTEMPTY (),
       .ALMOSTFULL  (),
-      .DO          (fifo_in_data[7:0]),
+      .DO          (fifo_in_data_scale[7:0]),
       .EMPTY       (in_fifo_empty),
       .FULL        (in_fifo_full),
       .RDCOUNT     (),
@@ -233,7 +275,7 @@ module glip_uart_toplevel
       .WRERR       (),
       .DI          (ingress_buffer_data[7:0]),
       .RDCLK       (clk_logic),
-      .RDEN        (fifo_in_ready),
+      .RDEN        (fifo_in_ready_scale),
       .RST         (com_rst),
       .WRCLK       (clk_io),
       .WREN        (ingress_buffer_valid)
@@ -258,12 +300,12 @@ module glip_uart_toplevel
       .RDERR       (),
       .WRCOUNT     (),
       .WRERR       (),
-      .DI          (fifo_out_data[7:0]),
+      .DI          (fifo_out_data_scale[7:0]),
       .RDCLK       (clk_io),
       .RDEN        (egress_in_ready),
       .RST         (com_rst),
       .WRCLK       (clk_logic),
-      .WREN        (fifo_out_valid)
+      .WREN        (fifo_out_valid_scale)
       );
    
 endmodule // glip_uart_toplevel

@@ -103,6 +103,8 @@ set files [list \
  "[file normalize "$origin_dir/../../../../common/logic/sevensegment/sevensegment.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/measure/glip_measure_sevensegment.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/measure/glip_measure.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_downscale.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_upscale.v"]"\
 ]
 add_files -norecurse -fileset $obj $files
 
@@ -160,6 +162,18 @@ if {[string equal [get_runs -quiet synth_1] ""]} {
 }
 set obj [get_runs synth_1]
 set_property "part" "xc7a100tcsg324-1" $obj
+set_property -name {steps.synth_design.args.more options} -value {-generic WIDTH=8} -objects $obj
+
+# Create 'synth_2' run (if not found)
+if {[string equal [get_runs -quiet synth_2] ""]} {
+  create_run -name synth_2 -part xc7a100tcsg324-1 -flow {Vivado Synthesis 2015} -strategy "Vivado Synthesis Defaults" -constrset constrs_1
+} else {
+  set_property strategy "Vivado Synthesis Defaults" [get_runs synth_2]
+  set_property flow "Vivado Synthesis 2015" [get_runs synth_2]
+}
+set obj [get_runs synth_2]
+set_property "part" "xc7a100tcsg324-1" $obj
+set_property -name {steps.synth_design.args.more options} -value {-generic WIDTH=16} -objects $obj
 
 # set the current synth run
 current_run -synthesis [get_runs synth_1]
@@ -172,6 +186,18 @@ if {[string equal [get_runs -quiet impl_1] ""]} {
   set_property flow "Vivado Implementation 2015" [get_runs impl_1]
 }
 set obj [get_runs impl_1]
+set_property "part" "xc7a100tcsg324-1" $obj
+set_property "steps.write_bitstream.args.readback_file" "0" $obj
+set_property "steps.write_bitstream.args.verbose" "0" $obj
+
+# Create 'impl_2' run (if not found)
+if {[string equal [get_runs -quiet impl_2] ""]} {
+  create_run -name impl_2 -part xc7a100tcsg324-1 -flow {Vivado Implementation 2015} -strategy "Vivado Implementation Defaults" -constrset constrs_1 -parent_run synth_2
+} else {
+  set_property strategy "Vivado Implementation Defaults" [get_runs impl_2]
+  set_property flow "Vivado Implementation 2015" [get_runs impl_2]
+}
+set obj [get_runs impl_2]
 set_property "part" "xc7a100tcsg324-1" $obj
 set_property "steps.write_bitstream.args.readback_file" "0" $obj
 set_property "steps.write_bitstream.args.verbose" "0" $obj
