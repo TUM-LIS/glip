@@ -43,15 +43,15 @@ module glip_upscale
 
    /* 0 while storing the first part and 1 when emitting */
    reg                      scale;
-   /* Store lower part for second cycle */
-   reg [IN_SIZE-1:0]        lower;
+   /* Store upper part for second cycle */
+   reg [IN_SIZE-1:0]        upper;
 
    /* Ready to store on first part and then passthrough in second */
    assign in_ready = !scale | out_ready;
    /* Valid in second part */
    assign out_valid = scale & in_valid;
    /* Assemble data */
-   assign out_data = { in_data, lower };
+   assign out_data = { upper, in_data };
    
    always @(posedge clk) begin
       if (rst) begin
@@ -65,7 +65,7 @@ module glip_upscale
 
    always @(posedge clk) begin
       if (in_valid & in_ready) begin
-         lower <= in_data;
+         upper <= in_data;
       end
    end
 endmodule // glip_upscale

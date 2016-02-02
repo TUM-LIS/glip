@@ -41,17 +41,17 @@ module glip_downscale
     output                 out_valid,
     input                  out_ready);
 
-   /* 0 when passthrough and 1 when emitting upper part */
+   /* 0 when passthrough and 1 when emitting lower part */
    reg                     scale;
-   /* Store upper part for emitting in second transfer */
-   reg [OUT_SIZE-1:0]      upper;
+   /* Store lower part for emitting in second transfer */
+   reg [OUT_SIZE-1:0]      lower;
 
    /* Ready during passthrough */
    assign in_ready = !scale & out_ready;
    /* Valid during passthrough or second transfer */
-   assign out_valid = scale ? 1 : in_valid;
-   /* Passthrough in first and stored upper in second transfer */
-   assign out_data = !scale ? in_data[OUT_SIZE-1:0] : upper; 
+   assign out_valid = scale | in_valid;
+   /* Passthrough in first and stored lower in second transfer */
+   assign out_data = scale ? lower : in_data[OUT_SIZE*2-1:OUT_SIZE];
    
    always @(posedge clk) begin
       if (rst) begin
@@ -65,7 +65,7 @@ module glip_downscale
 
    always @(posedge clk) begin
       if (in_valid & in_ready) begin
-         upper <= in_data[OUT_SIZE*2-1:OUT_SIZE];
+         lower <= in_data[OUT_SIZE-1:0];
       end
    end
    
