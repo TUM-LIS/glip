@@ -27,7 +27,9 @@
 
 module glip_tcp_toplevel
   #(parameter WIDTH = 16,
-    parameter PORT = 23000)
+    parameter PORT = 23000,
+    parameter UART_LIKE = 0
+    )
    (
     // Clock & Reset
     input                  clk_io,
@@ -72,12 +74,17 @@ module glip_tcp_toplevel
 
    localparam STATE_MASK_CTRL  = 32'h1;
    localparam STATE_MASK_READ  = 32'h2;
-   localparam STATE_MASK_WRITE = 32'h4;   
+   localparam STATE_MASK_WRITE = 32'h4;
+   localparam UART_DELAY = 8;
    
+   logic [63:0] rcnt, wcnt;
+
    always @(negedge clk_logic) begin
       if (rst) begin
          logic_rst = 0;
-         com_rst = 0;           
+         com_rst = 0;
+         rcnt = 0;
+         wcnt = 0;
       end else begin
          automatic int connected;
          automatic int unsigned state;
@@ -102,18 +109,42 @@ module glip_tcp_toplevel
 
          // We have new incoming data
          if ((state & STATE_MASK_READ) != 0) begin
-            automatic longint data = glip_tcp_read(obj);
-            fifo_in.data = data[WIDTH-1:0];
-            fifo_in.valid = 1;
+            if (UART_LIKE && rcnt == 0) begin
+               rcnt = UART_DELAY;
+            end
+
+            if (UART_LIKE ? rcnt == 1 : 1) begin
+               automatic longint data = glip_tcp_read(obj);
+               fifo_in.data = data[WIDTH-1:0];
+               fifo_in.valid = 1;
+            end else begin
+               fifo_in.valid = 0;
+            end
          end else begin
             fifo_in.valid = 0;
          end
 
          // Write outgoing data
          if ((state & STATE_MASK_WRITE) != 0) begin
-            fifo_out.ready = 1;
+            if (UART_LIKE && wcnt == 0) begin
+               wcnt = UART_DELAY;
+            end
+
+            if (UART_LIKE ? wcnt == 1 : 1) begin
+               fifo_out.ready = 1;
+            end else begin
+               fifo_out.ready = 0;
+            end
          end else begin
             fifo_out.ready = 0;
+         end
+
+         if (rcnt != 0) begin
+            rcnt = rcnt - 1;
+         end
+
+         if (wcnt != 0) begin
+            wcnt = wcnt - 1;
          end
       end
    end
