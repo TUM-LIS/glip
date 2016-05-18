@@ -576,7 +576,7 @@ int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
          * available is limited by the buffer size.
          * @todo: This can be solved by loop-reading until timeout
          */
-        err(ctx, "The read size cannot be larger than %u bytes.", bctx->buffer_size);
+        err(ctx, "The read size cannot be larger than %lu bytes.", bctx->buffer_size);
         return -1;
     }
 
