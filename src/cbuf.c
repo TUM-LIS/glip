@@ -372,7 +372,7 @@ int cbuf_write(struct cbuf *buf, const uint8_t *data, size_t size)
  * @return 0 on success
  * @return -EINVAL if the buffer does not have enough space available, the
  *                 reservation is not possible.
- * @return -EINVAL the allocation of a temporary buffer failed
+ * @return -ENOMEM the allocation of a temporary buffer failed
  * @return any other value indicates an error
  *
  * @see cbuf_commit()
