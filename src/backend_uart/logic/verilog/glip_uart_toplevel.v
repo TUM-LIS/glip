@@ -81,6 +81,27 @@ module glip_uart_toplevel
     output reg         error
     );
 
+   // Assert that the actual baud rate is within two percent of the specified
+   // baud rate.
+`ifndef SYNTHESIS
+// synthesis translate_off
+   integer divisor, baud_used, baud_err;
+   real baud_err_percent;
+   initial begin
+      assign divisor = FREQ_CLK_IO / BAUD;
+      assign baud_used = FREQ_CLK_IO / divisor;
+      assign baud_err = (baud_used > BAUD ? baud_used - BAUD : BAUD - baud_used);
+      assign baud_err_percent = $itor(baud_err) / $itor(BAUD);
+      $display("%m: Using baud rate of %d, resulting in an error of %f percent from the specified baud rate of %d.",
+               baud_used, baud_err_percent, BAUD);
+      if (baud_err_percent > 0.02) begin
+         $display("%m: Baud error larger than two percent.");
+         $stop;
+      end
+   end
+// synthesis translate on
+`endif
+
    wire [7:0]     fifo_out_data_scale;
    wire           fifo_out_valid_scale;
    wire           fifo_out_ready_scale;
