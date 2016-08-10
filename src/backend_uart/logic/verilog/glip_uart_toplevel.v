@@ -27,27 +27,37 @@
  * bit, no parity and one stop bit. All baud rates are supported, but
  * be careful with low frequencies and large baud rates that the
  * tolerance of the rounded bit divisor (rounding error of
- * FREQ/BAUD) is within 2%.
- * 
+ * FREQ_CLK_IO/BAUD) is within 2%.
+ *
+ * The uart_* signals are seen from the side of this module, i.e. from the DCE
+ * side. To connect them to a host, connect the signals in a crossed way.
+ *
  * Parameters:
- *  - FREQ: The frequency of the design, to match the second
+ *  - FREQ_CLK_IO: The frequency of clk_io
  *  - BAUD: Interface baud rate
  *  - XILINX_TARGET_DEVICE: Xilinx device, allowed: "7SERIES"
+ *
+ *
+ * Limitations:
+ * - Only Xilinx 7 series devices are supported due to the use of
+ *   Xilinx-specific dual-clock FIFO macros.
  *
  * Author(s):
  *   Stefan Wallentowitz <stefan.wallentowitz@tum.de>
  */
 
 module glip_uart_toplevel
-  #(parameter FREQ = 32'hx,
+  #(parameter FREQ_CLK_IO = 32'hx,
     parameter BAUD = 115200,
     parameter WIDTH = 8,
     parameter XILINX_TARGET_DEVICE = "7SERIES")
    (
     // Clock & Reset
-    input              clk_io,
-    input              clk_logic,
+    input              clk,     // Logic clock (GLIP default)
+    input              clk_io,  // I/O clock
     input              rst,
+
+    output             com_rst,
 
     // GLIP FIFO Interface
     input [WIDTH-1:0]  fifo_out_data,
@@ -58,15 +68,15 @@ module glip_uart_toplevel
     input              fifo_in_ready,
 
     // GLIP Control Interface
-    output             logic_rst,
-    output             com_rst,
-    
+    output             ctrl_logic_rst,
+
     // UART Interface
+    // All ports are seen from our side, i.e. from the DCE side
     input              uart_rx,
     output             uart_tx,
-    input              uart_cts,
-    output             uart_rts,
-    
+    input              uart_cts_n, // active low
+    output             uart_rts_n, // active low
+
     // Error signal if failure on the line
     output reg         error
     );
@@ -111,7 +121,8 @@ module glip_uart_toplevel
    assign egress_in_valid = ~out_fifo_empty;
    assign fifo_out_ready_scale = ~out_fifo_full;
 
-   assign uart_rts = 0;
+   // We are always ready to send
+   assign uart_rts_n = 1'b0;
 
    // Generate error. Sticky when an error occured.
    wire          rcv_error;
@@ -164,8 +175,7 @@ module glip_uart_toplevel
     ); */
    glip_uart_control
      #(.FIFO_CREDIT_WIDTH(12),
-       .INPUT_FIFO_CREDIT(4090),
-       .FREQ(FREQ))
+       .INPUT_FIFO_CREDIT(4090))
    u_control(/*AUTOINST*/
              // Outputs
              .ingress_in_ready          (ingress_in_ready),
@@ -174,7 +184,7 @@ module glip_uart_toplevel
              .egress_in_ready           (egress_in_ready),
              .egress_out_data           (egress_out_data[7:0]),
              .egress_out_enable         (egress_out_enable),
-             .logic_rst                 (logic_rst),
+             .ctrl_logic_rst            (ctrl_logic_rst),
              .com_rst                   (com_rst),
              .error                     (control_error),         // Templated
              // Inputs
@@ -187,7 +197,7 @@ module glip_uart_toplevel
              .egress_in_valid           (egress_in_valid),
              .egress_out_done           (egress_out_done),
              .transfer_in               (transfer_in));
-   
+
    /* glip_uart_receive AUTO_TEMPLATE(
     .clk (clk_io),
     .rx  (uart_rx),
@@ -196,7 +206,7 @@ module glip_uart_toplevel
     .error  (rcv_error),
     ); */
    glip_uart_receive
-     #(.DIVISOR(FREQ/BAUD))
+     #(.DIVISOR(FREQ_CLK_IO/BAUD))
    u_receive(/*AUTOINST*/
              // Outputs
              .enable                    (ingress_in_valid),      // Templated
@@ -212,11 +222,11 @@ module glip_uart_toplevel
     .clk    (clk_io),
     .tx     (uart_tx),
     .done   (egress_out_done),
-    .enable (egress_out_enable & ~uart_cts),
+    .enable (egress_out_enable & ~uart_cts_n),
     .data   (egress_out_data[]),
     ); */
    glip_uart_transmit
-     #(.DIVISOR(FREQ/BAUD))
+     #(.DIVISOR(FREQ_CLK_IO/BAUD))
    u_transmit(/*AUTOINST*/
               // Outputs
               .tx                       (uart_tx),               // Templated
@@ -225,7 +235,7 @@ module glip_uart_toplevel
               .clk                      (clk_io),                // Templated
               .rst                      (com_rst),               // Templated
               .data                     (egress_out_data[7:0]),  // Templated
-              .enable                   (egress_out_enable & ~uart_cts)); // Templated
+              .enable                   (egress_out_enable & ~uart_cts_n)); // Templated
 
    // Buffer uart -> logic
    FIFO_DUALCLOCK_MACRO
@@ -253,7 +263,7 @@ module glip_uart_toplevel
       .WREN        (ingress_out_valid)
       );
 
-   
+
    // Clock domain crossing uart -> logic
    FIFO_DUALCLOCK_MACRO
      #(.ALMOST_FULL_OFFSET(9'h006), // Sets almost full threshold
@@ -274,13 +284,13 @@ module glip_uart_toplevel
       .WRCOUNT     (),
       .WRERR       (),
       .DI          (ingress_buffer_data[7:0]),
-      .RDCLK       (clk_logic),
       .RDEN        (fifo_in_ready_scale),
       .RST         (com_rst),
+      .RDCLK       (clk),
       .WRCLK       (clk_io),
       .WREN        (ingress_buffer_valid)
       );
-   
+
    // Clock domain crossing logic -> uart
    FIFO_DUALCLOCK_MACRO
      #(.ALMOST_EMPTY_OFFSET(9'h006), // Sets the almost empty threshold
@@ -304,8 +314,8 @@ module glip_uart_toplevel
       .RDCLK       (clk_io),
       .RDEN        (egress_in_ready),
       .RST         (com_rst),
-      .WRCLK       (clk_logic),
       .WREN        (fifo_out_valid_scale)
+      .WRCLK       (clk),
       );
-   
+
 endmodule // glip_uart_toplevel

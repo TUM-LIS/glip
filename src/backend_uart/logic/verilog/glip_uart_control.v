@@ -29,8 +29,7 @@
 
 module glip_uart_control
   #(parameter FIFO_CREDIT_WIDTH = 1'bx,
-    parameter INPUT_FIFO_CREDIT = 1'bx,
-    parameter FREQ = 1'bx)
+    parameter INPUT_FIFO_CREDIT = 1'bx)
    (
     input        clk,
     input        rst,
@@ -53,8 +52,8 @@ module glip_uart_control
 
     input        transfer_in,
 
-    output reg   logic_rst,
-    output reg   com_rst,
+    output reg   ctrl_logic_rst,
+    output       com_rst,
     output       error
     );
 
