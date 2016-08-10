@@ -117,7 +117,7 @@ module glip_uart_toplevel
    wire          rcv_error;
    wire          control_error;
    always @(posedge clk_io) begin
-      if (rst | com_rst) begin
+      if (com_rst) begin
          error <= 0;
       end else begin
          error <= error | rcv_error | control_error;
