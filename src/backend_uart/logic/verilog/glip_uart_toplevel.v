@@ -145,6 +145,54 @@ module glip_uart_toplevel
    // We are always ready to send
    assign uart_rts_n = 1'b0;
 
+   // FIFO enable and reset control
+   // "WREN and RDEN must be held Low before and during the Reset cycle. In
+   //  addition, WREN and RDEN should be held Low for two WRCLK and RDCLK
+   //  cycles, respectively, after the Reset is deasserted to guarantee timing."
+   //  [UG473 (v1.11), p 49,  Xilinx]
+
+   wire          in_fifo_rden;
+   wire          in_fifo_wren;
+   wire          in_buffer_rden;
+   wire          in_buffer_wren;
+   wire          out_fifo_rden;
+   wire          out_fifo_wren;
+   wire          fifo_rst;
+
+   reg [2:0]     fifo_en_io;
+   reg [1:0]     fifo_rst_io ;
+   reg [2:0]     fifo_en_logic;
+   reg [1:0]     fifo_rst_logic;
+
+   assign fifo_rst = fifo_rst_io[0] & fifo_rst_logic[0];
+   assign in_fifo_rden = fifo_in_ready_scale & fifo_en_logic[0];
+   assign in_fifo_wren = ingress_buffer_valid & fifo_en_io[0];
+   assign in_buffer_rden = ingress_buffer_ready & fifo_en_io[0];
+   assign in_buffer_wren =  ingress_out_valid & fifo_en_io[0];
+   assign out_fifo_rden = egress_in_ready & fifo_en_io[0];
+   assign out_fifo_wren = fifo_out_valid_scale & fifo_en_logic[0];
+
+   // Generate delayed enable and rst signals for the different clocks
+   always @(posedge clk_io) begin
+      if (com_rst) begin
+         fifo_en_io <= 3'b000;
+         fifo_rst_io <= {1'b1, fifo_rst_io[1]};
+      end else begin
+         fifo_en_io <= {1'b1, fifo_en_io[2:1]};
+         fifo_rst_io <= 2'b0;
+      end
+   end
+
+   always @(posedge clk) begin
+      if (com_rst) begin
+         fifo_en_logic <= 3'b000;
+         fifo_rst_logic <= {1'b1, fifo_rst_logic[1]};
+      end else begin
+         fifo_en_logic <= {1'b1, fifo_en_logic[2:1]};
+         fifo_rst_logic <= 2'b0;
+      end
+   end
+
    // Generate error. Sticky when an error occured.
    wire          rcv_error;
    wire          control_error;
@@ -278,10 +326,10 @@ module glip_uart_toplevel
       .WRERR       (),
       .DI          (ingress_out_data[7:0]),
       .RDCLK       (clk_io),
-      .RDEN        (ingress_buffer_ready),
-      .RST         (com_rst),
+      .RDEN        (in_buffer_rden),
+      .RST         (fifo_rst_io[0]),
       .WRCLK       (clk_io),
-      .WREN        (ingress_out_valid)
+      .WREN        (in_buffer_wren)
       );
 
 
@@ -305,11 +353,11 @@ module glip_uart_toplevel
       .WRCOUNT     (),
       .WRERR       (),
       .DI          (ingress_buffer_data[7:0]),
-      .RDEN        (fifo_in_ready_scale),
-      .RST         (com_rst),
       .RDCLK       (clk),
+      .RDEN        (in_fifo_rden),
+      .RST         (fifo_rst),
       .WRCLK       (clk_io),
-      .WREN        (ingress_buffer_valid)
+      .WREN        (in_fifo_wren)
       );
 
    // Clock domain crossing logic -> uart
@@ -333,10 +381,10 @@ module glip_uart_toplevel
       .WRERR       (),
       .DI          (fifo_out_data_scale[7:0]),
       .RDCLK       (clk_io),
-      .RDEN        (egress_in_ready),
-      .RST         (com_rst),
-      .WREN        (fifo_out_valid_scale)
+      .RDEN        (out_fifo_rden),
+      .RST         (fifo_rst),
       .WRCLK       (clk),
+      .WREN        (out_fifo_wren)
       );
 
 endmodule // glip_uart_toplevel
