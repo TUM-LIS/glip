@@ -87,7 +87,7 @@ vivado vivado/nexys4ddr.xpr
 <h2>Configure the FPGA </h2>
 <p>When the bitstream has been succesfully generated, open the Hardware Manager, turn the board on and program the device.</p>
 <h2>Execute the loopback measurement tool </h2>
-<p>Execute the GLIP tool "Loopback Measure" that measures the loopback performance. </p><pre class="fragment">glip_loopback_measure -b uart -ospeed=3000000
+<p>Execute the GLIP tool "Loopback Measure" that measures the loopback performance. </p><pre class="fragment">glip_loopback_measure -b uart -ospeed=3000000,device=/dev/ttyUSB0
 </pre><p>If the UART device cannot be found at <code>/dev/ttyUSB0</code> try others like <code>/dev/ttyUSB1</code> etc. If you can see the device, but cannot open, check the permissions.</p>
 <p>The performance should be 300 kByte/s bidirectional. </p>
 </div><!-- contents -->
@@ -95,7 +95,7 @@ vivado vivado/nexys4ddr.xpr
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Tue Jan 12 2016 09:47:50 for glip by
+    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

@@ -75,38 +75,50 @@ Modules</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>The GLIP logic provides the interface between the UART controller and the user logic. This is essentially serialization and de-serialization of the UART data stream.</p>
+<p>Due to the use of Xilinx FIFO primitives, only Xilinx 7-series devices are supported at the moment. (However, support for other devices should be possible by exchanging the FIFOs.)</p>
 <p>The Verilog toplevel module <code>glip_uart_toplevel</code> implements the <a class="el" href="group__logicif.html">common GLIP logic interface</a>.</p>
+<p>Additionally, the following signals are available in <code>glip_uart_toplevel</code>.</p>
 <table class="doxtable">
 <tr>
 <th>Port Name </th><th align="center">Width </th><th align="center">Direction </th><th>Description  </th></tr>
+<tr>
+<td>clk_io </td><td align="center">1 </td><td align="center">IN </td><td>I/O clock </td></tr>
 <tr>
 <td>uart_rx </td><td align="center">1 </td><td align="center">IN </td><td>RX signal </td></tr>
 <tr>
 <td>uart_tx </td><td align="center">1 </td><td align="center">OUT </td><td>TX signal </td></tr>
 <tr>
-<td>uart_cts </td><td align="center">1 </td><td align="center">IN </td><td>clear to send, flow control for TX </td></tr>
+<td>uart_cts_n </td><td align="center">1 </td><td align="center">IN </td><td>clear to send, flow control for TX. active low </td></tr>
 <tr>
-<td>uart_rts </td><td align="center">1 </td><td align="center">OUT </td><td>ready to send, flow control for RX </td></tr>
+<td>uart_rts_n </td><td align="center">1 </td><td align="center">OUT </td><td>ready to send, flow control for RX. active low </td></tr>
 </table>
-<p>The following parameters need to be set:</p>
+<p>The following parameters are available.</p>
 <table class="doxtable">
 <tr>
 <th>Name </th><th>Description  </th></tr>
 <tr>
-<td>FREQ </td><td>Clock frequency </td></tr>
+<td>FREQ_CLK_IO </td><td>Frequency of the I/O clock <code>clk_io</code> </td></tr>
 <tr>
-<td>BAUD </td><td>Baud rate </td></tr>
+<td>BAUD </td><td>Baud rate (default: 115200) </td></tr>
+<tr>
+<td>XILINX_TARGET_DEVICE </td><td>Xilinx target device. Valid options: <code>7SERIES</code> for Xilinx 7 series devices (Virtex, Kintex, Artix). Default: <code>7SERIES</code> </td></tr>
+<tr>
+<td>WIDTH </td><td>Width of the FIFO (<code>fifo_*</code>) ports. Supported values: 8 and 16. Default: 8 </td></tr>
 </table>
-<p>The backend currently does not support logic reset as there is no out-of-band signaling. Doing it in-band is a peding feature.</p>
-<h2>Ressource Utilization </h2>
+<h2>Resource Utilization </h2>
 <p>The following resource utilization of the hardware logic was measured on a Xilinx 7 Series device:</p>
-<p>| LUTs | Registers | BRAMs | | 323 | 154 | 2 | </p>
+<table class="doxtable">
+<tr>
+<th>LUTs </th><th>Registers </th><th>BRAMs  </th></tr>
+<tr>
+<td>323 </td><td>154 </td><td>2 </td></tr>
+</table>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Tue Jan 12 2016 09:47:50 for glip by
+    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

@@ -110,8 +110,7 @@ Data Fields</h2></td></tr>
 <tr class="separator:aada5218eae8ac14f31f6df1539b4059a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cb3623d4a53ac1d93471848f740fa6b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a5cb3623d4a53ac1d93471848f740fa6b">ctrl_sfd</a></td></tr>
 <tr class="separator:a5cb3623d4a53ac1d93471848f740fa6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a320511f2f43b2eae6c7a63ecfdbd7653"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a320511f2f43b2eae6c7a63ecfdbd7653"></a>
-char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr>
+<tr class="memitem:a320511f2f43b2eae6c7a63ecfdbd7653"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a320511f2f43b2eae6c7a63ecfdbd7653">device</a></td></tr>
 <tr class="separator:a320511f2f43b2eae6c7a63ecfdbd7653"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05b954baa9b654fe6ec33af54a74c2fe"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a05b954baa9b654fe6ec33af54a74c2fe">fd</a></td></tr>
 <tr class="separator:a05b954baa9b654fe6ec33af54a74c2fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -278,7 +277,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
       </table>
 </div><div class="memdoc">
 <p>communication thread</p>
-<p>Baud rate </p>
+<p>Thread instance </p>
 
 </div>
 </div>
@@ -401,6 +400,19 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
 
 </div>
 </div>
+<a class="anchor" id="a320511f2f43b2eae6c7a63ecfdbd7653"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char* glip_backend_ctx::device</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Device name </p>
+
+</div>
+</div>
 <a class="anchor" id="a05b954baa9b654fe6ec33af54a74c2fe"></a>
 <div class="memitem">
 <div class="memproto">
@@ -410,7 +422,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Device name </p>
+<p>Terminal file </p>
 
 </div>
 </div>
@@ -423,7 +435,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Terminal file </p>
+<p>Baud rate </p>
 
 </div>
 </div>
@@ -436,7 +448,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Thread instance </p>
+<p>Size of circular buffers </p>
 
 </div>
 </div>
@@ -449,7 +461,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Size of circular buffers </p>
+<p>Input buffer </p>
 
 </div>
 </div>
@@ -462,7 +474,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Input buffer </p>
+<p>Output buffer </p>
 
 </div>
 </div>
@@ -475,7 +487,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Output buffer </p>
+<p>Current debt (what we can send) </p>
 
 </div>
 </div>
@@ -488,7 +500,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Current debt (what we can send) </p>
+<p>Current credit (what logic can send) </p>
 
 </div>
 </div>
@@ -501,7 +513,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Current credit (what logic can send) </p>
+<p>Request a logic reset </p>
 
 </div>
 </div>
@@ -514,7 +526,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Request a logic reset </p>
+<p>Request a termination </p>
 
 </div>
 </div>
@@ -530,7 +542,7 @@ char *&#160;</td><td class="memItemRight" valign="bottom"><b>device</b></td></tr
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="structglip__backend__ctx.html">glip_backend_ctx</a></li>
-    <li class="footer">Generated on Tue Jan 12 2016 09:47:50 for glip by
+    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

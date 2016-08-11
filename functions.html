@@ -48,6 +48,7 @@
   <div id="navrow3" class="tabs2">
     <ul class="tablist">
       <li class="current"><a href="functions.html"><span>All</span></a></li>
+      <li><a href="functions_func.html"><span>Functions</span></a></li>
       <li><a href="functions_vars.html"><span>Variables</span></a></li>
     </ul>
   </div>
@@ -115,6 +116,13 @@ $(document).ready(function(){initNavTree('functions.html','');});
 </li>
 <li>connected
 : <a class="el" href="structglip__ctx.html#abf24ca2b5af6745139a2f188f2fa8906">glip_ctx</a>
+, <a class="el" href="classGlipTcp.html#a11f1a828fe8cb4c65c15921fc850a84a">GlipTcp</a>
+</li>
+<li>CONTROL_AVAILABLE
+: <a class="el" href="classGlipTcp.html#ac93f68fff283de4bc530a0517d9f4501">GlipTcp</a>
+</li>
+<li>control_msg()
+: <a class="el" href="classGlipTcp.html#a73cd1f7e16b31376e724fb720b0a34ba">GlipTcp</a>
 </li>
 <li>credit
 : <a class="el" href="structglip__backend__ctx.html#a1e7d08630c97e188cb74a7e2e1bc3d2d">glip_backend_ctx</a>
@@ -141,6 +149,9 @@ $(document).ready(function(){initNavTree('functions.html','');});
 <li>debt
 : <a class="el" href="structglip__backend__ctx.html#aeb340614f9d421cd8fef5837df90f852">glip_backend_ctx</a>
 </li>
+<li>device
+: <a class="el" href="structglip__backend__ctx.html#a320511f2f43b2eae6c7a63ecfdbd7653">glip_backend_ctx</a>
+</li>
 </ul>
 
 
@@ -162,8 +173,17 @@ $(document).ready(function(){initNavTree('functions.html','');});
 
 
 <h3><a class="anchor" id="index_i"></a>- i -</h3><ul>
+<li>INCOMING_AVAILABLE
+: <a class="el" href="classGlipTcp.html#a6f4970580f58ffe31582bf00c4866798">GlipTcp</a>
+</li>
+<li>init()
+: <a class="el" href="classGlipTcp.html#a432f0806bb2a58e889e0bfff5e2888cc">GlipTcp</a>
+</li>
 <li>input_buffer
 : <a class="el" href="structglip__backend__ctx.html#a093dfdd19903bd5c7ffefc069cd41558">glip_backend_ctx</a>
+</li>
+<li>instance()
+: <a class="el" href="classGlipTcp.html#a2e9f4568a486c17bdf0981c5e64cdf33">GlipTcp</a>
 </li>
 </ul>
 
@@ -211,6 +231,9 @@ $(document).ready(function(){initNavTree('functions.html','');});
 <li>new
 : <a class="el" href="structglip__backend.html#abe9a7a520ff076b78eb9f002ba3018df">glip_backend</a>
 </li>
+<li>next_cycle()
+: <a class="el" href="classGlipTcp.html#a2abfa3e52cf483a582fc034c76603cc9">GlipTcp</a>
+</li>
 <li>num_backend_options
 : <a class="el" href="structglip__ctx.html#aa835027900079ca9408288a180ea0083">glip_ctx</a>
 </li>
@@ -226,6 +249,9 @@ $(document).ready(function(){initNavTree('functions.html','');});
 </li>
 <li>open
 : <a class="el" href="structglip__backend__if.html#a38a24f1f1eeb40152dc1d6dc3e5ae7e5">glip_backend_if</a>
+</li>
+<li>OUTGOING_READY
+: <a class="el" href="classGlipTcp.html#a21b2850071bfc7d27d88d8d3ff08a4a3">GlipTcp</a>
 </li>
 <li>output_buffer
 : <a class="el" href="structglip__backend__ctx.html#a649da41ea43bb21736ad26cc771b17a3">glip_backend_ctx</a>
@@ -258,6 +284,15 @@ $(document).ready(function(){initNavTree('functions.html','');});
 </li>
 <li>read_notification_sem
 : <a class="el" href="structglip__backend__ctx.html#a3f774ecca58054e53bb87d286d4a48e9">glip_backend_ctx</a>
+</li>
+<li>readAck()
+: <a class="el" href="classGlipTcp.html#abfe02db2e56785b3241698b31481be57">GlipTcp</a>
+</li>
+<li>readData()
+: <a class="el" href="classGlipTcp.html#a8c1ed9d1dd93fd09752b8c46304120a7">GlipTcp</a>
+</li>
+<li>reset()
+: <a class="el" href="classGlipTcp.html#aafdbf53efc21bacf9097869ff46c4d81">GlipTcp</a>
 </li>
 <li>reset_request
 : <a class="el" href="structglip__backend__ctx.html#a6ae073aaf35f056d0e99c261605fae48">glip_backend_ctx</a>
@@ -345,13 +380,16 @@ $(document).ready(function(){initNavTree('functions.html','');});
 <li>write_notification_sem
 : <a class="el" href="structglip__backend__ctx.html#a2bde2c78aa91817349db4af6f40a2cd4">glip_backend_ctx</a>
 </li>
+<li>writeData()
+: <a class="el" href="classGlipTcp.html#a1302a16b610b53e7d3f5dac21263ab9c">GlipTcp</a>
+</li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Tue Jan 12 2016 09:47:50 for glip by
+    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
