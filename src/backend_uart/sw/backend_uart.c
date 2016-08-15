@@ -592,16 +592,21 @@ int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         clock_gettime(CLOCK_REALTIME, &ts);
         timespec_add_ns(&ts, timeout * 1000 * 1000);
     }
-    while (cbuf_fill_level(bctx->input_buffer) < size) {
+
+    size_t level = cbuf_fill_level(bctx->input_buffer);
+
+    while (level < size) {
         if (timeout == 0) {
-            rv = cbuf_wait_for_level_change(bctx->input_buffer);
+            rv = cbuf_wait_for_level_change(bctx->input_buffer, level);
         } else {
-            rv = cbuf_timedwait_for_level_change(bctx->input_buffer, &ts);
+            rv = cbuf_timedwait_for_level_change(bctx->input_buffer, level, &ts);
         }
 
         if (rv != 0) {
             break;
         }
+
+        level = cbuf_fill_level(bctx->input_buffer);
     }
 
     /*
@@ -691,9 +696,9 @@ int gb_uart_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
         if (cbuf_free_level(bctx->output_buffer) == 0) {
             if (timeout == 0) {
-                cbuf_wait_for_level_change(bctx->output_buffer);
+                cbuf_wait_for_level_change(bctx->output_buffer, 0);
             } else {
-                cbuf_timedwait_for_level_change(bctx->output_buffer, &ts);
+                cbuf_timedwait_for_level_change(bctx->output_buffer, 0, &ts);
             }
         }
     }
