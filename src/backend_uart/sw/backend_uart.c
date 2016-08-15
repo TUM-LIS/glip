@@ -580,11 +580,6 @@ int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         return -1;
     }
 
-    if (timeout != 0) {
-        clock_gettime(CLOCK_REALTIME, &ts);
-        timespec_add_ns(&ts, timeout * 1000 * 1000);
-    }
-
     /*
      * Wait until sufficient data is available to be read.
      */
