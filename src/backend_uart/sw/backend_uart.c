@@ -39,13 +39,15 @@
 #include <fcntl.h>
 
 #include <errno.h>
-#include <termios.h>
 #include <unistd.h>
 #include <assert.h>
 
+#include <termios.h>
+#include <linux/serial.h>
+#include <sys/ioctl.h>
+
 #include <sys/time.h>
 #include <stdio.h>
-
 
 /* Forward declarations of local helpers */
 /**
@@ -291,14 +293,6 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
         return -1;
     }
 
-    /* Translate the integer speed to the proper define value for termios */
-    int baud = speed_lookup(bctx->speed);
-    if (baud == -1) {
-        err(ctx, "Speed not known: %d."
-            "Custom baud rates are not supported currently\n", baud);
-        return -1;
-    }
-
     /* Get the attributes of the terminal to manipulate them */
     struct termios tty;
     memset(&tty, 0, sizeof tty);
@@ -307,9 +301,50 @@ int gb_uart_open(struct glip_ctx *ctx, unsigned int num_channels)
         return -1;
     }
 
-    /* Set line speed */
-    cfsetospeed(&tty, baud);
-    cfsetispeed(&tty, baud);
+    /* Translate the integer speed to the proper define value for termios */
+    int baud = speed_lookup(bctx->speed);
+
+    if (baud >= 0) {
+        /* Set line speed to predefined value */
+        cfsetospeed(&tty, baud);
+        cfsetispeed(&tty, baud);
+    } else {
+        /* Set line speed with custom divisor */
+        tty.c_cflag = B38400;
+
+        struct serial_struct serial;
+        serial.reserved_char[0] = 0;
+        if (ioctl(bctx->fd, TIOCGSERIAL, &serial) < 0) {
+            err(ctx, "Cannot get serial I/O attributes\n");
+            return -1;
+        }
+        serial.flags &= ~ASYNC_SPD_MASK;
+        serial.flags |= ASYNC_SPD_CUST;
+        serial.custom_divisor = (serial.baud_base + (bctx->speed / 2))
+                / bctx->speed;
+
+        if (serial.custom_divisor < 1) {
+            err(ctx, "Baud rate to high for valid divisor\n");
+            return -1;
+        }
+
+        if (ioctl(bctx->fd, TIOCSSERIAL, &serial) < 0) {
+            err(ctx, "Cannot update serial baud rate\n");
+            return -1;
+        }
+
+        if (ioctl(bctx->fd, TIOCGSERIAL, &serial) < 0) {
+            err(ctx, "Cannot read back serial baud rate\n");
+            return -1;
+        }
+
+        if ((serial.baud_base / serial.custom_divisor < 0.96 * bctx->speed) ||
+                (serial.baud_base / serial.custom_divisor > 1.04 * bctx->speed)) {
+            err(ctx, "Baud rate %d cannot be set: %f\n", bctx->speed,
+                ((double)serial.baud_base / serial.custom_divisor));
+            return -1;
+        }
+    }
 
     /* 8N1 */
     tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
