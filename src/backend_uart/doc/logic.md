@@ -33,13 +33,3 @@ The following parameters are available.
 | BUFFER_OUT_DEPTH | Size of the output buffer (i.e. the buffer between the FPGA and the host) in bytes. Default: 4096 bytes |
 
 
-Resource Utilization
---------------------
-
-The following resource utilization of the hardware logic was measured
-on a Xilinx 7 Series device:
-
-| LUTs | Registers | BRAMs |
-|------|-----------|-------|
-| 323  | 154       | 2     |
-
