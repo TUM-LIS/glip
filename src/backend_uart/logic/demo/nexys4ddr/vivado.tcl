@@ -105,9 +105,13 @@ set files [list \
  "[file normalize "$origin_dir/../../../../common/logic/measure/glip_measure.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_downscale.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_upscale.v"]"\
- "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/oh_fifo_sync.v"]"\
- "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/oh_memory_dp.v"]"\
- "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/oh_memory_ram.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/fifo_sync_fwft.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_wrptr_full.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_sync_wr2rd.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_sync_rd2wr.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_rdptr_empty.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_fifo_mem.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_fifo.v"]"\
 ]
 add_files -norecurse -fileset $obj $files
 

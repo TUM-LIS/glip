@@ -43,7 +43,7 @@ module fifo_sync_fwft #(
    output              full,
    output              prog_full,
    output              empty,
-   output              rd_count
+   output [AW-1:0]     rd_count
    );   
 
    reg              fifo_valid;
