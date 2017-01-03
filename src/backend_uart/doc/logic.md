@@ -26,5 +26,3 @@ The following parameters are available.
 | BAUD        | Baud rate (default: 115200)         |
 | WIDTH       | Width of the FIFO (`fifo_*`) ports. Supported values: 8 and 16. Default: 8 |
 | BUFFER_OUT_DEPTH | Size of the output buffer (i.e. the buffer between the FPGA and the host) in bytes. Default: 4096 bytes |
-
-
