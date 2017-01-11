@@ -35,23 +35,17 @@
  * Parameters:
  *  - FREQ_CLK_IO: The frequency of clk_io
  *  - BAUD: Interface baud rate
- *  - XILINX_TARGET_DEVICE: Xilinx device, allowed: "7SERIES"
- *
- *
- * Limitations:
- * - Only Xilinx 7 series devices are supported due to the use of
- *   Xilinx-specific dual-clock FIFO macros.
  *
  * Author(s):
  *   Stefan Wallentowitz <stefan.wallentowitz@tum.de>
+ *   Max Koenen <max.koenen@tum.de>
  */
 
 module glip_uart_toplevel
   #(parameter FREQ_CLK_IO = 32'hx,
     parameter BAUD = 115200,
     parameter WIDTH = 8,
-    parameter BUFFER_OUT_DEPTH = 4*1024,
-    parameter XILINX_TARGET_DEVICE = "7SERIES")
+    parameter BUFFER_OUT_DEPTH = 4*1024)
    (
     // Clock & Reset
     input              clk,     // Logic clock (GLIP default)
@@ -152,12 +146,6 @@ module glip_uart_toplevel
 
    // We are always ready to send
    assign uart_rts_n = 1'b0;
-
-   // FIFO enable and reset control
-   // "WREN and RDEN must be held Low before and during the Reset cycle. In
-   //  addition, WREN and RDEN should be held Low for two WRCLK and RDCLK
-   //  cycles, respectively, after the Reset is deasserted to guarantee timing."
-   //  [UG473 (v1.11), p 49,  Xilinx]
 
    wire          in_fifo_rden;
    wire          in_fifo_wren;
@@ -315,85 +303,53 @@ module glip_uart_toplevel
               .enable                   (egress_out_enable & ~uart_cts_n)); // Templated
 
    // Buffer uart -> logic
-   FIFO_DUALCLOCK_MACRO
-     #(.ALMOST_FULL_OFFSET(9'h006), // Sets almost full threshold
-       .DATA_WIDTH(8), // Valid values are 1-72 (37-72 only valid when FIFO_SIZE="36Kb")
-       .DEVICE(XILINX_TARGET_DEVICE), // Target device: "VIRTEX5", "VIRTEX6", "7SERIES"
-       .FIFO_SIZE("36Kb"), // Target BRAM: "18Kb" or "36Kb"
-       .FIRST_WORD_FALL_THROUGH("TRUE") // Sets the FIfor FWFT to "TRUE" or "FALSE"
-       )
+   fifo_sync_fwft
+     #(.DW(8),.PROG_FULL(9'h006))
    in_buffer
-     (.ALMOSTEMPTY (),
-      .ALMOSTFULL  (in_buffer_almost_full),
-      .DO          (ingress_buffer_data[7:0]),
-      .EMPTY       (in_buffer_empty),
-      .FULL        (),
-      .RDCOUNT     (),
-      .RDERR       (),
-      .WRCOUNT     (),
-      .WRERR       (),
-      .DI          (ingress_out_data[7:0]),
-      .RDCLK       (clk_io),
-      .RDEN        (in_buffer_rden),
-      .RST         (fifo_rst_io[0]),
-      .WRCLK       (clk_io),
-      .WREN        (in_buffer_wren)
-      );
-
+     (.clk       (clk_io),
+      .nreset    (!fifo_rst_io[0]),
+      .din       (ingress_out_data[7:0]),
+      .wr_en     (in_buffer_wren),
+      .rd_en     (in_buffer_rden),
+      .dout      (ingress_buffer_data[7:0]),
+      .full      (),
+      .prog_full (in_buffer_almost_full),
+      .empty     (in_buffer_empty),
+      .rd_count  ());
 
    // Clock domain crossing uart -> logic
-   FIFO_DUALCLOCK_MACRO
-     #(.ALMOST_FULL_OFFSET(9'h006), // Sets almost full threshold
-       .ALMOST_EMPTY_OFFSET(9'h006),
-       .DATA_WIDTH(8), // Valid values are 1-72 (37-72 only valid when FIFO_SIZE="36Kb")
-       .DEVICE(XILINX_TARGET_DEVICE), // Target device: "VIRTEX5", "VIRTEX6", "7SERIES"
-       .FIFO_SIZE("18Kb"), // Target BRAM: "18Kb" or "36Kb"
-       .FIRST_WORD_FALL_THROUGH("TRUE") // Sets the FIfor FWFT to "TRUE" or "FALSE"
-       )
-   in_fifo
-     (.ALMOSTEMPTY (),
-      .ALMOSTFULL  (),
-      .DO          (fifo_in_data_scale[7:0]),
-      .EMPTY       (in_fifo_empty),
-      .FULL        (in_fifo_full),
-      .RDCOUNT     (),
-      .RDERR       (),
-      .WRCOUNT     (),
-      .WRERR       (),
-      .DI          (ingress_buffer_data[7:0]),
-      .RDCLK       (clk),
-      .RDEN        (in_fifo_rden),
-      .RST         (fifo_rst),
-      .WRCLK       (clk_io),
-      .WREN        (in_fifo_wren)
-      );
+   cdc_fifo
+     #(.DW(8))
+   in_fifo(
+       // Outputs
+       .wr_full          (in_fifo_full),
+       .rd_empty         (in_fifo_empty),
+       .rd_data          (fifo_in_data_scale[7:0]),
+       // Inputs
+       .wr_clk           (clk_io),
+       .rd_clk           (clk),
+       .wr_rst           (~fifo_rst),
+       .rd_rst           (~fifo_rst),
+       .wr_data          (ingress_buffer_data[7:0]),
+       .wr_en            (in_fifo_wren),
+       .rd_en            (in_fifo_rden));
 
    // Clock domain crossing logic -> uart
-   FIFO_DUALCLOCK_MACRO
-     #(.ALMOST_EMPTY_OFFSET(9'h006), // Sets the almost empty threshold
-       .ALMOST_FULL_OFFSET(9'h006),
-       .DATA_WIDTH(8), // Valid values are 1-72 (37-72 only valid when FIFO_SIZE="36Kb")
-       .DEVICE(XILINX_TARGET_DEVICE), // Target device: "VIRTEX5", "VIRTEX6", "7SERIES"
-       .FIFO_SIZE("18Kb"), // Target BRAM: "18Kb" or "36Kb"
-       .FIRST_WORD_FALL_THROUGH("TRUE") // Sets the FIfor FWFT to "TRUE" or "FALSE"
-       )
-   out_fifo
-     (.ALMOSTEMPTY (),
-      .ALMOSTFULL  (),
-      .DO          (egress_in_data),
-      .EMPTY       (out_fifo_empty),
-      .FULL        (out_fifo_full),
-      .RDCOUNT     (),
-      .RDERR       (),
-      .WRCOUNT     (),
-      .WRERR       (),
-      .DI          (fifo_out_data_scale[7:0]),
-      .RDCLK       (clk_io),
-      .RDEN        (out_fifo_rden),
-      .RST         (fifo_rst),
-      .WRCLK       (clk),
-      .WREN        (out_fifo_wren)
-      );
+   cdc_fifo
+     #(.DW(8))
+   out_fifo(
+       // Outputs
+       .wr_full          (out_fifo_full),
+       .rd_empty         (out_fifo_empty),
+       .rd_data          (egress_in_data),
+       // Inputs
+       .wr_clk           (clk),
+       .rd_clk           (clk_io),
+       .wr_rst           (~fifo_rst),
+       .rd_rst           (~fifo_rst),
+       .wr_data          (fifo_out_data_scale[7:0]),
+       .wr_en            (out_fifo_wren),
+       .rd_en            (out_fifo_rden));
 
    oh_fifo_sync
      #(.DW(8),.DEPTH(BUFFER_OUT_DEPTH))
