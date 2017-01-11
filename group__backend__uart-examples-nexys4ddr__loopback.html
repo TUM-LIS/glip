@@ -66,6 +66,7 @@ $(document).ready(function(){initNavTree('group__backend__uart-examples-nexys4dd
 </div><!--header-->
 <div class="contents">
 <p>This demo implements a loopback in the device. The seven segment display is used to show the current throughput in the loopback.</p>
+<p>This demo assumes basic familiarity with Xilinx Vivado and using an FPGA.</p>
 <h2>Prerequisites </h2>
 <p>For this demo you need:</p>
 <ul>
@@ -77,25 +78,28 @@ $(document).ready(function(){initNavTree('group__backend__uart-examples-nexys4dd
 cd glip
 ./autogen.sh
 mkdir build; cd build
-../configure
+../configure --enable-uart
 make
 sudo make install
 </pre><h2>Synthesize the design </h2>
-<p>In the glip repository go to <code>src/backend_uart/logic/demo/nexys4ddr</code> and run: </p><pre class="fragment">make vivado-project
+<p>Synthesize the example design with Xilinx Vivado. </p><pre class="fragment">cd GLIP_SOURCES/src/backend_uart/logic/demo/nexys4ddr
+make vivado-project
 vivado vivado/nexys4ddr.xpr
 </pre><p>In vivado run the implementation and generate the bitstream.</p>
 <h2>Configure the FPGA </h2>
-<p>When the bitstream has been succesfully generated, open the Hardware Manager, turn the board on and program the device.</p>
+<p>When the bitstream has been succesfully generated, open the Hardware Manager in Vivado, turn the board on and program the device.</p>
 <h2>Execute the loopback measurement tool </h2>
-<p>Execute the GLIP tool "Loopback Measure" that measures the loopback performance. </p><pre class="fragment">glip_loopback_measure -b uart -ospeed=3000000,device=/dev/ttyUSB0
+<p>Execute the GLIP tool "Loopback Measure" that measures the loopback performance.</p>
+<p>Before you start the measurement, make sure to set the DIP switches on Nexys 4 DDR board below the 7-segment display all to OFF, i.e. they all point towards the bottom of the PCB and away from the 7-segment display (this enables loopback mode). The 7-segment display should now display all zeros.</p>
+<p>The design is set to 12 MBaud/s in the toplevel verilog file, we need to pass this speed to GLIP using the <code>speed</code> parameter. Run the loopback measurement tool like this: </p><pre class="fragment">glip_loopback_measure -b uart -ospeed=12000000,device=/dev/ttyUSB0
 </pre><p>If the UART device cannot be found at <code>/dev/ttyUSB0</code> try others like <code>/dev/ttyUSB1</code> etc. If you can see the device, but cannot open, check the permissions.</p>
-<p>The performance should be 300 kByte/s bidirectional. </p>
+<p>The performance should be 1170 kByte/s bidirectional. </p>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
+    <li class="footer">Generated on Wed Jan 11 2017 15:51:41 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

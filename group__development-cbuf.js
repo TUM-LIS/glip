@@ -29,6 +29,6 @@ var group__development_cbuf =
     [ "cbuf_is_full", "group__development-cbuf.html#ga35fc94ab1feed8e622c4463d3988ded4", null ],
     [ "cbuf_fill_level", "group__development-cbuf.html#ga8ad5db0ba023348744c080d1bba08cf2", null ],
     [ "cbuf_free_level", "group__development-cbuf.html#ga146839d85f4314d7aac1d55fa6721945", null ],
-    [ "cbuf_wait_for_level_change", "group__development-cbuf.html#gaac061fbaf4eac2127aee5ac2bfa5177a", null ],
-    [ "cbuf_timedwait_for_level_change", "group__development-cbuf.html#ga9872126868ffb2148641c85cda6e79cc", null ]
+    [ "cbuf_wait_for_level_change", "group__development-cbuf.html#ga143a76ed0d4a0a05c83960a1c4d03165", null ],
+    [ "cbuf_timedwait_for_level_change", "group__development-cbuf.html#gaa74f8bb49737765f8b90818a19970260", null ]
 ];

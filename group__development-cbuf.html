@@ -106,10 +106,10 @@ Functions</h2></td></tr>
 <tr class="separator:ga8ad5db0ba023348744c080d1bba08cf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga146839d85f4314d7aac1d55fa6721945"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#ga146839d85f4314d7aac1d55fa6721945">cbuf_free_level</a> (struct <a class="el" href="structcbuf.html">cbuf</a> *buf)</td></tr>
 <tr class="separator:ga146839d85f4314d7aac1d55fa6721945"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaac061fbaf4eac2127aee5ac2bfa5177a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#gaac061fbaf4eac2127aee5ac2bfa5177a">cbuf_wait_for_level_change</a> (struct <a class="el" href="structcbuf.html">cbuf</a> *buf)</td></tr>
-<tr class="separator:gaac061fbaf4eac2127aee5ac2bfa5177a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9872126868ffb2148641c85cda6e79cc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#ga9872126868ffb2148641c85cda6e79cc">cbuf_timedwait_for_level_change</a> (struct <a class="el" href="structcbuf.html">cbuf</a> *buf, const struct timespec *abs_timeout)</td></tr>
-<tr class="separator:ga9872126868ffb2148641c85cda6e79cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga143a76ed0d4a0a05c83960a1c4d03165"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#ga143a76ed0d4a0a05c83960a1c4d03165">cbuf_wait_for_level_change</a> (struct <a class="el" href="structcbuf.html">cbuf</a> *buf, size_t level)</td></tr>
+<tr class="separator:ga143a76ed0d4a0a05c83960a1c4d03165"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa74f8bb49737765f8b90818a19970260"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__development-cbuf.html#gaa74f8bb49737765f8b90818a19970260">cbuf_timedwait_for_level_change</a> (struct <a class="el" href="structcbuf.html">cbuf</a> *buf, size_t level, const struct timespec *abs_timeout)</td></tr>
+<tr class="separator:gaa74f8bb49737765f8b90818a19970260"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Inside GLIP it is often necessary to buffer incoming or outgoing data between the read/write API and a communication thread. This functionality is usually accomplished by a circular buffer, a.k.a. ring buffer or FIFO, and implemented in this class.</p>
@@ -147,7 +147,7 @@ Utility Functionality</h1>
 <p>cbuf contains, in addition to the read/write API, a number of useful utility functions.</p>
 <ul>
 <li>Information about the fill level: <a class="el" href="group__development-cbuf.html#ga146839d85f4314d7aac1d55fa6721945">cbuf_free_level()</a>, <a class="el" href="group__development-cbuf.html#ga8ad5db0ba023348744c080d1bba08cf2">cbuf_fill_level()</a>, <a class="el" href="group__development-cbuf.html#ga658dcd20d427a506c498a8b2795c13a5">cbuf_is_empty()</a>, and <a class="el" href="group__development-cbuf.html#ga35fc94ab1feed8e622c4463d3988ded4">cbuf_is_full()</a></li>
-<li>Blocking waiting until the fill level changes: <a class="el" href="group__development-cbuf.html#gaac061fbaf4eac2127aee5ac2bfa5177a">cbuf_wait_for_level_change()</a> and <a class="el" href="group__development-cbuf.html#ga9872126868ffb2148641c85cda6e79cc">cbuf_timedwait_for_level_change()</a></li>
+<li>Blocking waiting until the fill level changes: <a class="el" href="group__development-cbuf.html#ga143a76ed0d4a0a05c83960a1c4d03165">cbuf_wait_for_level_change()</a> and <a class="el" href="group__development-cbuf.html#gaa74f8bb49737765f8b90818a19970260">cbuf_timedwait_for_level_change()</a></li>
 <li>Optimizations: <a class="el" href="group__development-cbuf.html#ga82522b71b0c0bbe512795f1d57b5d402">cbuf_set_hint_max_read_size()</a> and <a class="el" href="group__development-cbuf.html#gadb977647a0d6f8795c5bb097044cf4a8">cbuf_set_hint_max_write_size()</a> </li>
 </ul>
 <h2 class="groupheader">Function Documentation</h2>
@@ -738,7 +738,7 @@ any other value indicates an error</dd></dl>
 
 </div>
 </div>
-<a class="anchor" id="gaac061fbaf4eac2127aee5ac2bfa5177a"></a>
+<a class="anchor" id="ga143a76ed0d4a0a05c83960a1c4d03165"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -746,26 +746,38 @@ any other value indicates an error</dd></dl>
           <td class="memname">int cbuf_wait_for_level_change </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="structcbuf.html">cbuf</a> *&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>level</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>Wait until the buffer fill level changes</p>
+<p>This function is called with the last known level. The functions returns immediately if the level has changed. Otherwise it waits for another thread to write to the buffer (which triggers a level change).</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">buf</td><td>the buffer </td></tr>
+    <tr><td class="paramname">level</td><td>known level </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on success </dd>
 <dd>
 any other value indicates an error</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__development-cbuf.html#ga9872126868ffb2148641c85cda6e79cc">cbuf_timedwait_for_level_change()</a> </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__development-cbuf.html#gaa74f8bb49737765f8b90818a19970260">cbuf_timedwait_for_level_change()</a> </dd></dl>
 
 </div>
 </div>
-<a class="anchor" id="ga9872126868ffb2148641c85cda6e79cc"></a>
+<a class="anchor" id="gaa74f8bb49737765f8b90818a19970260"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -774,6 +786,12 @@ any other value indicates an error</dd></dl>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="structcbuf.html">cbuf</a> *&#160;</td>
           <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -789,10 +807,12 @@ any other value indicates an error</dd></dl>
       </table>
 </div><div class="memdoc">
 <p>Wait until the buffer fill level changes with a timeout</p>
+<p>This function is called with the last known level. The functions returns immediately if the level has changed. Otherwise it waits for another thread to write to the buffer (which triggers a level change).</p>
 <p>The timeout expires when the absolute time in <code>abs_timeout</code> passes, or if the absolute time specified in <code>abs_timeout</code> has already passed. This behavior is identical to the timed pthread functions (pthread_mutex_timedlock(), etc.).</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">buf</td><td>the buffer </td></tr>
+    <tr><td class="paramname">level</td><td>last known level </td></tr>
     <tr><td class="paramname">abs_timeout</td><td>if this absolute time passes, the timeout expires </td></tr>
   </table>
   </dd>
@@ -800,7 +820,7 @@ any other value indicates an error</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on success </dd>
 <dd>
 any other value indicates an error</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__development-cbuf.html#gaac061fbaf4eac2127aee5ac2bfa5177a">cbuf_wait_for_level_change()</a> </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__development-cbuf.html#ga143a76ed0d4a0a05c83960a1c4d03165">cbuf_wait_for_level_change()</a> </dd></dl>
 
 </div>
 </div>
@@ -809,7 +829,7 @@ any other value indicates an error</dd></dl>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
+    <li class="footer">Generated on Wed Jan 11 2017 15:51:41 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>

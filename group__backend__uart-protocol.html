@@ -96,13 +96,13 @@ $(document).ready(function(){initNavTree('group__backend__uart-protocol.html',''
 <p>The credit datagrams are exchanged as follows:</p>
 <p>For the <em>ingress</em> path (host to logic), the credit is sent right after reset of the communication. This reset is usually a board reset, but most importantly when connecting from the host. The communication controller then observes the data stream and updates the credit each time it falls below the 50% threshold. This gives the host sufficient time to actually receive this message before running out of credits, and on the other hand does not imply too many messages.</p>
 <p>For the <em>egress</em> path (logic to host), the host gives all initial credit in a few tranches to the FPGA. It then also observes the incoming data and sends a new credit of the maximum number that can be transferred in one datagram (<code>0x3fff</code>) once the remaining credit falls below the threshold of <code>HOST_BUFFER_SIZE - 0x3fff</code>.</p>
-<p>The rst pin is set on demand by the user application. The communications reset pin is used by the communication controller to reset itself to a defined state. </p>
+<p>The <code>logic_rst</code> pin is set on demand by the user application. The communications reset pin is used by the communication controller to reset itself to a defined state. </p>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu Aug 11 2016 11:09:43 for glip by
+    <li class="footer">Generated on Wed Jan 11 2017 15:51:41 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
