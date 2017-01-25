@@ -2,7 +2,7 @@ CAPI=1
 [main]
 name = glip:common:fifo_sync_fwft
 description = Synchronous First Word Fall Through (FWFT) FIFO
-depends = glip:common:fifo_sync
+depend = glip:common:fifo_sync
 
 [fileset src_files]
 file_type = verilogSource
