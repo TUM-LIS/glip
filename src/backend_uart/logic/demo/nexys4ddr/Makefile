@@ -1,11 +1,13 @@
 all: vivado-project
 
-vivado-project:
+vivado-project: vivado/nexys4ddr.xpr
+
+vivado/nexys4ddr.xpr:
 	vivado -mode batch -source vivado.tcl
 
-clean: clean-vivado 
+clean: clean-vivado
 
-clean-vivado: 
+clean-vivado:
 	rm -rf vivado
 	rm -f vivado_pid*
 	rm -f vivado.jou vivado.log

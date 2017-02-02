@@ -1,11 +1,13 @@
 all: vivado-project
 
-vivado-project:
+vivado-project: vivado/vcu108.xpr
+
+vivado/vcu108.xpr:
 	vivado -mode batch -source vivado.tcl
 
-clean: clean-vivado 
+clean: clean-vivado
 
-clean-vivado: 
+clean-vivado:
 	rm -rf vivado
 	rm -f vivado_pid*
 	rm -f vivado.jou vivado.log
