@@ -57,7 +57,7 @@ module nexys4ddr
    output reg   redled
    );
 
-   parameter WIDTH = 8;
+   parameter WIDTH = 16;
 
    localparam FREQ = 100000000; // frequency of clk [Hz]
    localparam BAUD = 12000000;

@@ -98,8 +98,8 @@ set files [list \
  "[file normalize "$origin_dir/../../verilog/glip_uart_transmit.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/credit/verilog/creditor.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/credit/verilog/debtor.v"]"\
- "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_downscale.v"]"\
- "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_upscale.v"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_downscale.sv"]"\
+ "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_upscale.sv"]"\
  "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/fifo_sync_fwft.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/oh_fifo_sync.v"]"\
  "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/oh_memory_dp.v"]"\
