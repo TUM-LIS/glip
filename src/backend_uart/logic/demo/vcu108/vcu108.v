@@ -58,7 +58,7 @@ module vcu108
    parameter WIDTH = 16;
 
    localparam FREQ = 125000000; // frequency of clk [Hz]
-   localparam BAUD = 115200;
+   localparam BAUD = 921600;
 
    // Match pins for this demo:
    wire     rst;
