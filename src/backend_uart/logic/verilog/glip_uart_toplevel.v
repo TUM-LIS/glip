@@ -306,7 +306,7 @@ module glip_uart_toplevel
    // connect ingress_cdc -> ingress_upscale
    assign ingress_upscale_in_data = ingress_cdc_rd_data;
    assign ingress_upscale_in_valid = ~ingress_cdc_rd_empty;
-   assign ingress_cdc_rd_en = ~ingress_upscale_in_ready;
+   assign ingress_cdc_rd_en = ingress_upscale_in_ready;
 
    glip_upscale
       #(.IN_SIZE(8),
@@ -325,7 +325,7 @@ module glip_uart_toplevel
    // connect ingress_upscale -> ingress_buffer
    assign ingress_buffer_din = ingress_upscale_out_data;
    assign ingress_buffer_wr_en = ingress_upscale_out_valid & fifo_en_io[0];
-   assign ingress_upscale_out_ready = ingress_buffer_full;
+   assign ingress_upscale_out_ready = ~ingress_buffer_full;
 
    fifo_sync_fwft
       #(.DW(WIDTH),
