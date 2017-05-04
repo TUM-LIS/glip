@@ -51,7 +51,7 @@
 
 /* write block size in bytes,
  * can be any number smaller 256 or multiples of 256 */
-#define WRITE_BLOCK_SIZE 6
+#define WRITE_BLOCK_SIZE 8
 /* read block size in bytes */
 #define READ_BLOCK_SIZE 2048
 /* timeout for blocking reads */
