@@ -800,10 +800,15 @@ void* usb_write_thread(void* ctx_void)
         pthread_testcancel();
 
         if (rv != 0 && rv != LIBUSB_ERROR_TIMEOUT) {
-            /* An error has occurred and no data has been transferred */
+            /*
+             * An error has occurred and no data has been transferred.
+             * This happens sometimes if the receiving device is not yet ready,
+             * most errors go away with a retry. We therefore treat this error
+             * as non-fatal.
+             * */
             assert(transfer_len_sent == 0);
-            err(ctx, "Unable to transfer data to USB device. Error code: %d\n",
-                rv);
+            info(ctx, "Unable to transfer data to USB device. Error code: %d\n",
+                 rv);
             continue;
         }
 
