@@ -210,6 +210,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    unsigned int fifo_width_bytes = glip_get_fifo_width(glip_ctx);
+    if (transfer_size % fifo_width_bytes != 0) {
+        fprintf(stderr, "ERROR: The transfer size must be a multiple of the "
+                "FIFO width, which is %d bytes for the chosen backend.\n",
+                fifo_width_bytes);
+        return -1;
+    }
+
     rv = glip_logic_reset(glip_ctx);
     if (rv < 0) {
         fprintf(stderr, "ERROR: Cannot reset device\n");
