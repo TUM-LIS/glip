@@ -1,6 +1,7 @@
 var group__backend =
 [
     [ "Cypress FX2", "group__backend__cypressfx2.html", "group__backend__cypressfx2" ],
+    [ "Cypress FX3", "group__backend__cypressfx3.html", "group__backend__cypressfx3" ],
     [ "JTAG", "group__backend__jtag.html", "group__backend__jtag" ],
     [ "TCP", "group__backend__tcp.html", "group__backend__tcp" ],
     [ "UART", "group__backend__uart.html", "group__backend__uart" ],

@@ -70,10 +70,10 @@ $(document).ready(function(){initNavTree('structglip__backend__ctx.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:abcd17eee96cd766bbba2e3511c29e448"><td class="memItemLeft" align="right" valign="top">struct libusb_context *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#abcd17eee96cd766bbba2e3511c29e448">usb_ctx</a></td></tr>
-<tr class="separator:abcd17eee96cd766bbba2e3511c29e448"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a286fd76d5db986f242843a7cbad9ce69"><td class="memItemLeft" align="right" valign="top">struct libusb_device_handle *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a286fd76d5db986f242843a7cbad9ce69">usb_dev_handle</a></td></tr>
-<tr class="separator:a286fd76d5db986f242843a7cbad9ce69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a474f5300fd510b838690c4b0ab42254f"><td class="memItemLeft" align="right" valign="top">struct libusb_context *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a474f5300fd510b838690c4b0ab42254f">usb_ctx</a></td></tr>
+<tr class="separator:a474f5300fd510b838690c4b0ab42254f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53fa1f3588d1d507dabf55092950c69d"><td class="memItemLeft" align="right" valign="top">struct libusb_device_handle *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a53fa1f3588d1d507dabf55092950c69d">usb_dev_handle</a></td></tr>
+<tr class="separator:a53fa1f3588d1d507dabf55092950c69d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a411e8a1a882a9dec17c69b4375bbc303"><td class="memItemLeft" align="right" valign="top">pthread_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a411e8a1a882a9dec17c69b4375bbc303">usb_write_thread</a></td></tr>
 <tr class="separator:a411e8a1a882a9dec17c69b4375bbc303"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61b72f09c202f6aed303d97cee626f9d"><td class="memItemLeft" align="right" valign="top">pthread_attr_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structglip__backend__ctx.html#a61b72f09c202f6aed303d97cee626f9d">usb_write_thread_attr</a></td></tr>
@@ -133,16 +133,17 @@ Data Fields</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>GLIP backend context for the Cypress FX2 backend</p>
+<p>GLIP backend context for the Cypress FX3 backend</p>
 <p>GLIP backend context for the JTAG backend</p>
 <p>GLIP backend context for the TCP backend</p>
 <p>GLIP backend context for the UART backend </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a class="anchor" id="abcd17eee96cd766bbba2e3511c29e448"></a>
+<a class="anchor" id="a474f5300fd510b838690c4b0ab42254f"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">struct libusb_context* glip_backend_ctx::usb_ctx</td>
+          <td class="memname">struct libusb_context * glip_backend_ctx::usb_ctx</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -150,12 +151,12 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a286fd76d5db986f242843a7cbad9ce69"></a>
+<a class="anchor" id="a53fa1f3588d1d507dabf55092950c69d"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">struct libusb_device_handle* glip_backend_ctx::usb_dev_handle</td>
+          <td class="memname">struct libusb_device_handle * glip_backend_ctx::usb_dev_handle</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -532,6 +533,7 @@ Data Fields</h2></td></tr>
 </div>
 <hr/>The documentation for this struct was generated from the following files:<ul>
 <li>backend_cypressfx2/sw/backend_cypressfx2.c</li>
+<li>backend_cypressfx3/sw/backend_cypressfx3.c</li>
 <li>backend_jtag/sw/backend_jtag.c</li>
 <li>backend_tcp/sw/backend_tcp.c</li>
 <li>backend_uart/sw/backend_uart.c</li>
@@ -542,7 +544,7 @@ Data Fields</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="structglip__backend__ctx.html">glip_backend_ctx</a></li>
-    <li class="footer">Generated on Wed Jan 11 2017 15:51:41 for glip by
+    <li class="footer">Generated on Thu May 4 2017 22:04:12 for glip by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.9.1 </li>
   </ul>
