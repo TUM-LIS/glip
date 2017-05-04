@@ -754,12 +754,16 @@ void* usb_write_thread(void* ctx_void)
 
         unsigned int transfer_len = 0;
 
+        int is_full_transfer = 0;
+
         if (write_buf_fill_level >= USB_TRANSFER_PACKET_SIZE_BYTES) {
             /*
              * At least one full packet is available. Send out as many
              * full packets as possible, leaving the remainder for the next
              * transfer.
              */
+            is_full_transfer = 1;
+
             int num_packets = write_buf_fill_level / USB_TRANSFER_PACKET_SIZE_BYTES;
             if (num_packets > USB_MAX_PACKETS_PER_TRANSFER) {
                 num_packets = USB_MAX_PACKETS_PER_TRANSFER;
@@ -775,6 +779,8 @@ void* usb_write_thread(void* ctx_void)
              * short packet with whatever data we have available, but always
              * a full word.
              */
+            is_full_transfer = 1;
+
             transfer_len = write_buf_fill_level -
                            (write_buf_fill_level % gb_cypressfx3_get_fifo_width(ctx));
 
@@ -824,6 +830,25 @@ void* usb_write_thread(void* ctx_void)
 #endif
 
         cbuf_discard(bctx->write_buf, transfer_len_sent);
+
+        /*
+         * We have just transmitted a full packet (i.e. a multiple of
+         * USB_TRANSFER_PACKET_SIZE_BYTES bytes) and now our transmit buffer is
+         * empty. In this case, the FX3 firmware needs a hint to send its
+         * internal buffers out to the attached device. We send this hint in the
+         * form of a zero-length packet. This causes the FX3 firmware to inform
+         * the device that data is available.
+         * See https://github.com/TUM-LIS/glip/issues/36 for more information.
+         */
+        if (is_full_transfer && cbuf_fill_level(bctx->write_buf) == 0) {
+            dbg(ctx, "Sending a zero-length packet to signal the end of the"
+                     "transfer.\n");
+
+            rv = libusb_bulk_transfer(bctx->usb_dev_handle, USB_WR_EP,
+                                      transfer_data, 0,
+                                      (int*)&transfer_len_sent,
+                                      USB_TX_TIMEOUT_MS);
+        }
     }
 
     return NULL;
