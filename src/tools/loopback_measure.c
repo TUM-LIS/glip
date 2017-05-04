@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2015 by the author(s)
+/* Copyright (c) 2014-2017 by the author(s)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +20,14 @@
  *
  * ============================================================================
  *
- * libglip is a flexible FIFO-based communication library between an FPGA and
- * a PC.
+ * Loopback speed measurement tool
+ *
+ * Write data to a GLIP-attached device, and read back from it. Verify that the
+ * read data is equal to the written data, and show the speed of the transfer.
+ *
+ * This tool is useful for testing of a new backend, and to check if the bringup
+ * on a board was successful. The demos for different boards provided as part of
+ * GLIP also use this tool.
  *
  * Author(s):
  *   Philipp Wagner <philipp.wagner@tum.de>
@@ -45,7 +51,7 @@
 
 /* write block size in bytes,
  * can be any number smaller 256 or multiples of 256 */
-#define WRITE_BLOCK_SIZE 6
+#define WRITE_BLOCK_SIZE 8
 /* read block size in bytes */
 #define READ_BLOCK_SIZE 2048
 /* timeout for blocking reads */
@@ -210,6 +216,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    unsigned int fifo_width_bytes = glip_get_fifo_width(glip_ctx);
+    if (transfer_size % fifo_width_bytes != 0) {
+        fprintf(stderr, "ERROR: The transfer size must be a multiple of the "
+                "FIFO width, which is %d bytes for the chosen backend.\n",
+                fifo_width_bytes);
+        return -1;
+    }
+
     rv = glip_logic_reset(glip_ctx);
     if (rv < 0) {
         fprintf(stderr, "ERROR: Cannot reset device\n");
@@ -234,6 +248,10 @@ int main(int argc, char *argv[])
 
     clock_gettime(CLOCK_MONOTONIC, &start);
 
+    /*
+     * create the test data:
+     * WRITE_BLOCK_SIZE bytes of data linearly increasing between 0x00 and 0xFF.
+     */
     uint8_t data[WRITE_BLOCK_SIZE];
     for (size_t i = 0; i < WRITE_BLOCK_SIZE; i++) {
         data[i] = i % 256;
@@ -242,6 +260,10 @@ int main(int argc, char *argv[])
         size_t size_written;
         size_t block_size = WRITE_BLOCK_SIZE;
 
+        /*
+         * calculate block_size of the last block of a transfer with all
+         * remaining data (less than a full block)
+         */
         if ((current_sent + WRITE_BLOCK_SIZE) > transfer_size) {
             block_size = transfer_size - current_sent;
         }
@@ -313,11 +335,17 @@ void* read_from_target(void* ctx_void)
         }
         current_received += size_read;
 
+        /* ignore zero bytes used to fill last received word */
+        if (send_done && current_received > current_sent) {
+            size_read -= current_received - current_sent;
+        }
+
         /* verify received data */
         for (size_t i = 0; i < size_read; i++) {
             if (data_read[i] != data_exp) {
                 fprintf(stderr, "Data verification failed: expected 0x%x, "
-                        "got 0x%x at byte %d\n", data_exp, data_read[i], byte);
+                        "got 0x%x at byte %d. Next byte: 0x%x\n",
+                        data_exp, data_read[i], byte, data_read[i+1]);
                 exit_measurement(1);
             }
             byte++;
