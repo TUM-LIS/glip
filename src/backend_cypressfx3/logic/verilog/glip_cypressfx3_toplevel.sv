@@ -30,14 +30,13 @@
 
 module glip_cypressfx3_toplevel
 #(
-   parameter WIDTH = 32,
-   parameter FX3_WIDTH = 32,
+   parameter WIDTH = 16,
    parameter BUFFER_DEPTH = 512,
    parameter FREQ = 32'd100_000_000
 )(
    // Cypress FX3 ports
    input                 fx3_pclk,
-   inout [FX3_WIDTH-1:0] fx3_dq,
+   inout [WIDTH-1:0]     fx3_dq,
    output                fx3_slcs_n,
    output                fx3_sloe_n,
    output                fx3_slrd_n,
@@ -90,10 +89,10 @@ module glip_cypressfx3_toplevel
    wire                                            fx3_in_almost_full;
    wire                                            fx3_in_full;
 
-   wire [FX3_WIDTH-1:0]   fx3_dq_in;
-   wire [FX3_WIDTH-1:0]   fx3_dq_out;
+   wire [WIDTH-1:0]   fx3_dq_in;
+   wire [WIDTH-1:0]   fx3_dq_out;
    assign fx3_dq_in = fx3_dq;
-   assign fx3_dq = (fifoadr == FX3_EPIN ? fx3_dq_out : {FX3_WIDTH{1'hz}});
+   assign fx3_dq = (fifoadr == FX3_EPIN ? fx3_dq_out : {WIDTH{1'hz}});
 
    assign fx3_slcs_n = 1'b0;
 
@@ -103,63 +102,31 @@ module glip_cypressfx3_toplevel
    assign fx3_in_almost_full = !fx3_flagb_n;
 
    // Wires for ingress cdc fifo
-   wire [FX3_WIDTH-1:0] ingress_cdc_wr_data;
-   wire [FX3_WIDTH-1:0] ingress_cdc_rd_data;
+   wire [WIDTH-1:0]     ingress_cdc_wr_data;
+   wire [WIDTH-1:0]     ingress_cdc_rd_data;
    wire                 ingress_cdc_wr_en;
    wire                 ingress_cdc_rd_en;
    wire                 ingress_cdc_rd_empty;
 
    // Wires for ingress fx3 buffer
-   wire [FX3_WIDTH-1:0] ingress_fx3_buffer_din;
-   wire [FX3_WIDTH-1:0] ingress_fx3_buffer_dout;
+   wire [WIDTH-1:0]     ingress_fx3_buffer_din;
+   wire [WIDTH-1:0]     ingress_fx3_buffer_dout;
    wire                 ingress_fx3_buffer_wr_en;
    wire                 ingress_fx3_buffer_full;
    wire                 ingress_fx3_buffer_empty;
    wire                 ingress_fx3_buffer_rd_en;
 
-   // Wires for ingress downscale
-   wire [FX3_WIDTH-1:0] ingress_downscale_in_data;
-   wire [WIDTH-1:0]     ingress_downscale_out_data;
-   wire                 ingress_downscale_in_valid;
-   wire                 ingress_downscale_in_ready;
-   wire                 ingress_downscale_out_valid;
-   wire                 ingress_downscale_out_ready;
-
-   // Wires for ingress logic buffer
-   wire [WIDTH-1:0]     ingress_logic_buffer_din;
-   wire [WIDTH-1:0]     ingress_logic_buffer_dout;
-   wire                 ingress_logic_buffer_wr_en;
-   wire                 ingress_logic_buffer_full;
-   wire                 ingress_logic_buffer_empty;
-   wire                 ingress_logic_buffer_rd_en;
-
-   // Wires for egress logic buffer
-   wire [WIDTH-1:0]     egress_logic_buffer_din;
-   wire [WIDTH-1:0]     egress_logic_buffer_dout;
-   wire                 egress_logic_buffer_wr_en;
-   wire                 egress_logic_buffer_full;
-   wire                 egress_logic_buffer_empty;
-   wire                 egress_logic_buffer_rd_en;
-
-   // Wires for egress upscale
-   wire [WIDTH-1:0]     egress_upscale_in_data;
-   wire [FX3_WIDTH-1:0] egress_upscale_out_data;
-   wire                 egress_upscale_in_valid;
-   wire                 egress_upscale_in_ready;
-   wire                 egress_upscale_out_valid;
-   wire                 egress_upscale_out_ready;
-
    // Wires for egress fx3 buffer
-   wire [FX3_WIDTH-1:0] egress_fx3_buffer_din;
-   wire [FX3_WIDTH-1:0] egress_fx3_buffer_dout;
+   wire [WIDTH-1:0]     egress_fx3_buffer_din;
+   wire [WIDTH-1:0]     egress_fx3_buffer_dout;
    wire                 egress_fx3_buffer_wr_en;
    wire                 egress_fx3_buffer_full;
    wire                 egress_fx3_buffer_empty;
    wire                 egress_fx3_buffer_rd_en;
 
    // Wires for egress cdc fifo
-   wire [FX3_WIDTH-1:0] egress_cdc_wr_data;
-   wire [FX3_WIDTH-1:0] egress_cdc_rd_data;
+   wire [WIDTH-1:0]     egress_cdc_wr_data;
+   wire [WIDTH-1:0]     egress_cdc_rd_data;
    wire                 egress_cdc_wr_en;
    wire                 egress_cdc_wr_full;
    wire                 egress_cdc_rd_en;
@@ -182,7 +149,7 @@ module glip_cypressfx3_toplevel
    // 70MHz chosen as threshold since frequencies between 63MHz and 80MHz should
    // be avoided anyways.
    generate
-      if(FREQ <= 32'd70000000) begin
+      if (FREQ <= 32'd70_000_000) begin
          // Delay for reading from slave fifo (data will be available after
          // two clk cycles)
          reg         rd_delay;
@@ -195,7 +162,7 @@ module glip_cypressfx3_toplevel
                int_fifo_in_valid <= rd_delay;
             end
          end
-      end else if(FREQ > 32'd70000000) begin
+      end else if (FREQ > 32'd70_000_000) begin
          // Delay for reading from slave fifo (data will be available after
          // three clk cycles)
          reg [1:0]   rd_delay;
@@ -486,7 +453,7 @@ module glip_cypressfx3_toplevel
    wire ingress_cdc_wr_full;
 
    cdc_fifo
-      #(.DW(FX3_WIDTH))
+      #(.DW(WIDTH))
    u_ingress_cdc(
       // write side (fx3_pclk)
       .wr_clk           (fx3_pclk),
@@ -513,7 +480,7 @@ module glip_cypressfx3_toplevel
    assign int_fifo_in_almost_full = ingress_fx3_buffer_full;
 
    fifo_sync_fwft
-      #(.WIDTH(FX3_WIDTH),
+      #(.WIDTH(WIDTH),
       .DEPTH(BUFFER_DEPTH))
    u_ingress_fx3_buffer(
       .clk        (clk),
@@ -528,101 +495,21 @@ module glip_cypressfx3_toplevel
       .empty      (ingress_fx3_buffer_empty),
       .rd_en      (ingress_fx3_buffer_rd_en));
 
-   // Connect ingress_fx3_buffer -> ingress_downscale
-   assign ingress_downscale_in_data = ingress_fx3_buffer_dout;
-   assign ingress_downscale_in_valid = ~ingress_fx3_buffer_empty;
-   assign ingress_fx3_buffer_rd_en = ingress_downscale_in_ready;
-
-   glip_downscale
-      #(.IN_SIZE(FX3_WIDTH),
-      .OUT_SIZE(WIDTH))
-   u_ingress_downscale(
-      .clk       (clk),
-      .rst       (int_rst),
-      .in_data   (ingress_downscale_in_data),
-      .in_valid  (ingress_downscale_in_valid),
-      .in_ready  (ingress_downscale_in_ready),
-      .out_data  (ingress_downscale_out_data),
-      .out_valid (ingress_downscale_out_valid),
-      .out_ready (ingress_downscale_out_ready));
-
-   // Connect ingress_downscale -> ingress_logic_buffer.
-   // The buffer serves as a simple register stage to avoid long combinatoric
-   // paths due to the downscale module.
-   assign ingress_logic_buffer_din = ingress_downscale_out_data;
-   assign ingress_logic_buffer_wr_en = ingress_downscale_out_valid;
-   assign ingress_downscale_out_ready = ~ingress_logic_buffer_full;
-
-   fifo_sync_fwft
-      #(.WIDTH(WIDTH),
-      .DEPTH(4))
-   u_ingress_logic_buffer(
-      .clk   (clk),
-      .rst   (int_rst),
-
-      .din   (ingress_logic_buffer_din),
-      .wr_en (ingress_logic_buffer_wr_en),
-      .full  (ingress_logic_buffer_full),
-      .prog_full(),
-
-      .dout  (ingress_logic_buffer_dout),
-      .empty (ingress_logic_buffer_empty),
-      .rd_en (ingress_logic_buffer_rd_en));
-
-   // Connect ingress_logic_buffer -> output interface (to be used in attached
+   // Connect ingress_fx3_buffer -> output interface (to be used in attached
    // logic)
-   assign fifo_in_data = ingress_logic_buffer_dout;
-   assign fifo_in_valid = ~ingress_logic_buffer_empty;
-   assign ingress_logic_buffer_rd_en = fifo_in_ready;
+   assign fifo_in_data = ingress_fx3_buffer_dout;
+   assign fifo_in_valid = ~ingress_fx3_buffer_empty;
+   assign ingress_fx3_buffer_rd_en = fifo_in_ready;
 
    //-------------------------- egress data path --------------------------//
 
-   // Connect input interface -> egress_logic_buffer
-   assign egress_logic_buffer_din = fifo_out_data;
-   assign egress_logic_buffer_wr_en = fifo_out_valid;
-   assign fifo_out_ready = ~egress_logic_buffer_full;
+   // Connect input interface -> egress_fx3_buffer
+   assign egress_fx3_buffer_din = fifo_out_data;
+   assign egress_fx3_buffer_wr_en = fifo_out_valid;
+   assign fifo_out_ready = ~egress_fx3_buffer_full;
 
    fifo_sync_fwft
       #(.WIDTH(WIDTH),
-      .DEPTH(4))
-   u_egress_logic_buffer(
-      .clk   (clk),
-      .rst   (int_rst),
-
-      .din   (egress_logic_buffer_din),
-      .wr_en (egress_logic_buffer_wr_en),
-      .full  (egress_logic_buffer_full),
-      .prog_full(),
-
-      .dout  (egress_logic_buffer_dout),
-      .empty (egress_logic_buffer_empty),
-      .rd_en (egress_logic_buffer_rd_en));
-
-   // Connect egress_logic_buffer -> egress_upscale
-   assign egress_upscale_in_data = egress_logic_buffer_dout;
-   assign egress_upscale_in_valid = ~egress_logic_buffer_empty;
-   assign egress_logic_buffer_rd_en = egress_upscale_in_ready;
-
-   glip_upscale
-      #(.IN_SIZE(WIDTH),
-      .OUT_SIZE(FX3_WIDTH))
-   u_egress_upscale(
-      .clk       (clk),
-      .rst       (int_rst),
-      .in_data   (egress_upscale_in_data),
-      .in_valid  (egress_upscale_in_valid),
-      .in_ready  (egress_upscale_in_ready),
-      .out_data  (egress_upscale_out_data),
-      .out_valid (egress_upscale_out_valid),
-      .out_ready (egress_upscale_out_ready));
-
-   // Connect egress_upscale -> egress_fx3_buffer
-   assign egress_fx3_buffer_din = egress_upscale_out_data;
-   assign egress_fx3_buffer_wr_en = egress_upscale_out_valid;
-   assign egress_upscale_out_ready = ~egress_fx3_buffer_full;
-
-   fifo_sync_fwft
-      #(.WIDTH(FX3_WIDTH),
       .DEPTH(BUFFER_DEPTH))
    u_egress_fx3_buffer(
       .clk   (clk),
@@ -643,7 +530,7 @@ module glip_cypressfx3_toplevel
    assign egress_fx3_buffer_rd_en = ~egress_cdc_wr_full;
 
    cdc_fifo
-      #(.DW(FX3_WIDTH))
+      #(.DW(WIDTH))
    u_egress_cdc(
       .wr_clk           (clk),
       .wr_rst           (~int_rst),

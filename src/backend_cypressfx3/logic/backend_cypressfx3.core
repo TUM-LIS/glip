@@ -4,7 +4,6 @@ name = glip:backend:cypressfx3
 description = "GLIP Cypress FX3 (USB 3) backend"
 depend =
   glip:common:channel
-  glip:common:scaler
   optimsoc:fifo:fifo_sync_fwft
   glip:common:cdc
 

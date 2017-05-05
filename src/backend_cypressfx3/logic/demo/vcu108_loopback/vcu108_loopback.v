@@ -29,13 +29,12 @@
 
 module vcu108_loopback
   #(
-    parameter WIDTH = 16,
-    parameter FX3_WIDTH = 32
+    parameter WIDTH = 16
     )
   (
    // FX3 interface
    output 	     fx3_pclk,
-   inout [FX3_WIDTH-1:0] fx3_dq,
+   inout [WIDTH-1:0] fx3_dq,
    output 	     fx3_slcs_n,
    output 	     fx3_sloe_n,
    output 	     fx3_slrd_n,
@@ -84,7 +83,6 @@ module vcu108_loopback
 
    glip_cypressfx3_toplevel
       #(.WIDTH(WIDTH),
-      .FX3_WIDTH(FX3_WIDTH),
       .FREQ(FREQ))
    u_glib_cypressfx3(
       // Clock/Reset

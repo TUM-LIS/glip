@@ -160,6 +160,9 @@ struct glip_backend_ctx {
     struct cbuf *read_buf;
     /** semaphore notifying the USB receiving thread to fetch new data */
     sem_t read_notification_sem;
+
+    /** FIFO width (2 or 4 Bytes) */
+    uint8_t fifo_width;
 };
 
 /*
@@ -324,6 +327,9 @@ int gb_cypressfx3_open(struct glip_ctx *ctx, unsigned int num_channels)
             /* if we're here we found a match! */
             found_cnt++;
             found_dev_idx = dev_idx;
+            /* Serial number is used to determine the FIFO width. */
+            ctx->backend_ctx->fifo_width = desc.iSerialNumber;
+            assert(ctx->backend_ctx->fifo_width != 0);
             break;
         }
     }
@@ -957,11 +963,12 @@ unsigned int gb_cypressfx3_get_channel_count(struct glip_ctx *ctx)
  * Get the width of the FIFO
  *
  * @param  ctx the library context
- * @return always 2 bytes, i.e. 16 bit
+ * @return 2 or 4 bytes, i.e. 16 or 32 bit
  *
  * @see glip_get_fifo_width()
  */
 unsigned int gb_cypressfx3_get_fifo_width(struct glip_ctx *ctx)
 {
-    return 2;
+    struct glip_backend_ctx* bctx = ctx->backend_ctx;
+    return bctx->fifo_width;
 }

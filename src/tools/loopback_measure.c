@@ -51,7 +51,7 @@
 
 /* write block size in bytes,
  * can be any number smaller 256 or multiples of 256 */
-#define WRITE_BLOCK_SIZE 8
+#define WRITE_BLOCK_SIZE 256
 /* read block size in bytes */
 #define READ_BLOCK_SIZE 2048
 /* timeout for blocking reads */
@@ -332,11 +332,6 @@ void* read_from_target(void* ctx_void)
             exit_measurement(1);
         }
         current_received += size_read;
-
-        /* ignore zero bytes used to fill last received word */
-        if (send_done && current_received > current_sent) {
-            size_read -= current_received - current_sent;
-        }
 
         /* verify received data */
         for (size_t i = 0; i < size_read; i++) {

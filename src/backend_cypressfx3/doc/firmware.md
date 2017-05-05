@@ -3,7 +3,7 @@
 
 The Cypress FX3 chip needs firmware for its configuration. We use the
 chip in the "Slave FIFO" mode which only forwards data between USB and
-a 32 bit wide FIFO interface.
+a 16 or 32 bit wide FIFO interface (depending on the firmware that is used).
 
 ## Flashing the FX3 firmware
 
@@ -47,7 +47,8 @@ The following steps flash the firmware.
    If you want to flash the firmware to the FX3 permanently, choose "I2C EEPROM". (The recommended default.)
    If you are debugging the firmware you can also choose "RAM". (If you choose "RAM", you need to re-flash whenever you disconnect the board from the power supply.)
 
- * Click on "Select File" and choose the firmware file from the GLIP source directory: $GLIP/src/backend_cypressfx3/fw/cyfxslfifosync32.img
+ * Click on "Select File" and choose the firmware file from the GLIP source directory: $GLIP/src/backend_cypressfx3/fw/SlaveFifoSync32.img
+   (use $GLIP/src/backend_cypressfx3/fw/SlaveFifoSync16.img for a 16 bit wide FIFO interface)
 
  * Click on "Start Download" to flash the firmware to the FX3.
 
@@ -75,6 +76,7 @@ To build the firmware from source code follow these steps (under Linux):
  * Download the 'FX3 Slave FIFO Interface' example from http://www.cypress.com/documentation/application-notes/an65974-designing-ez-usb-fx3-slave-fifo-interface
  * Copy the directory "/FX3 Firmware/SlaveFifoSync" from the example to the directory $FX3_INSTALL_PATH/firmware/slavefifo_examples
  * Delete the subdirectories "Debug" and "Release" in "SlaveFifoSync"
- * Copy $GLIP/src/backend_cypressfx3/fw/SlaveFifoSync.patch to $FX3_INSTALL_PATH/firmware/slavefifo_examples/SlaveFifoSync and apply the patch
+ * Copy $GLIP/src/backend_cypressfx3/fw/SlaveFifoSync32.patch to $FX3_INSTALL_PATH/firmware/slavefifo_examples/SlaveFifoSync and apply the patch
+   (to build the firmware with the 16 bit wide FIFO interface use $GLIP/src/backend_cypressfx3/fw/SlaveFifoSync16.patch instead)
  * Now you can import the project to the EZ-USB FX3 SDK and build the firmware
 

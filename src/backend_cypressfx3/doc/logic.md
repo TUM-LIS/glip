@@ -15,7 +15,7 @@ careful as the output polarity can be changed in the FX3 firmware!
 | Port Name     | Width    | Direction | Description                          |
 |---------------|:--------:|:---------:|--------------------------------------|
 | fx3_pclk      | 1        | OUT       | interface clock (supplied by FPGA)   |
-| fx3_dq        | 32       | INOUT     | data bus                             |
+| fx3_dq        | 16/32    | INOUT     | data bus. Can be 16 or 32 bit wide   |
 | fx3_slcs_n    | 1        | OUT       | chip select                          |
 | fx3_slwr_n    | 1        | OUT       | write strobe                         |
 | fx3_sloe_n    | 1        | OUT       | enable FX3 output on data bus        |

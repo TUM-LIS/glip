@@ -46,8 +46,6 @@ set files [list \
  "[file normalize "$origin_dir/../../verilog/glip_cypressfx3_toplevel.sv"]"\
  "[file normalize "$origin_dir/vcu108_loopback_clock.v"]"\
  "[file normalize "$origin_dir/vcu108_loopback.v"]"\
- "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_downscale.sv"]"\
- "[file normalize "$origin_dir/../../../../common/logic/scaler/verilog/glip_upscale.sv"]"\
  "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/fifo_sync_fwft.sv"]"\
  "[file normalize "$origin_dir/../../../../common/logic/fifo/verilog/fifo_sync_standard.sv"]"\
  "[file normalize "$origin_dir/../../../../common/logic/cdc/verilog/cdc_wrptr_full.v"]"\
@@ -90,6 +88,14 @@ set_property "file_type" "XDC" $file_obj
 set file "[file normalize "$origin_dir/../../boards/vcu108/fmc_hpc1.xdc"]"
 set file_added [add_files -norecurse -fileset $obj $file]
 set file "$origin_dir/../../boards/vcu108/fmc_hpc1.xdc"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+set_property "file_type" "XDC" $file_obj
+
+# Add/Import constrs file and set constrs file properties
+set file "[file normalize "$origin_dir/../../boards/vcu108/fmc_hpc1_32.xdc"]"
+set file_added [add_files -norecurse -fileset $obj $file]
+set file "$origin_dir/../../boards/vcu108/fmc_hpc1_32.xdc"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property "file_type" "XDC" $file_obj
