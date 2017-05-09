@@ -57,9 +57,6 @@
 /* timeout for blocking reads */
 #define READ_TIMEOUT_MS 100
 
-extern void parse_options(char* str, struct glip_option* options[],
-                          size_t *num_options);
-
 void display_help(void);
 
 void display_help(void)
@@ -181,8 +178,8 @@ int main(int argc, char *argv[])
             break;
         case 'o':
             backend_optionstring = optarg;
-            parse_options(backend_optionstring, &backend_options,
-                          &num_backend_options);
+            glip_parse_option_string(backend_optionstring, &backend_options,
+                                     &num_backend_options);
             break;
         case 's':
             transfer_size = strtoul(optarg, NULL, 10);

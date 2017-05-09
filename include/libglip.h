@@ -132,6 +132,10 @@ int glip_get_backends(const char ***name, size_t *count);
 void glip_set_caller_ctx(struct glip_ctx *ctx, void *caller_ctx);
 void* glip_get_caller_ctx(struct glip_ctx *ctx);
 
+int glip_parse_option_string(char* str, struct glip_option* options[],
+                             size_t *num_options);
+
+
 #ifdef __cplusplus
 }
 #endif

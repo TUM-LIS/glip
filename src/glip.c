@@ -1,4 +1,4 @@
-/* Copyright (c) 2014 by the author(s)
+/* Copyright (c) 2014-2017 by the author(s)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -879,6 +879,85 @@ int glip_option_get_char(struct glip_ctx* ctx, const char* option_name,
         info(ctx, "Option with key '%s' not found.\n", option_name);
         return -1;
     }
+
+    return 0;
+}
+
+/**
+ * Parse a string of name=value pairs commonly used as backend options in GLIP
+ *
+ * This function is provided for conveniently getting a list of glip_option
+ * structs to be passed to glip_new() from a string of options in the format
+ * name=value,name2=value2,name3=value3
+ *
+ * @code{.c}
+ * char *backend_optionstring;
+ * struct glip_option* backend_options;
+ * size_t num_backend_options = 0;
+ *
+ * // obtain backend_optionstring from somewhere (e.g. Getopt or Argp)
+ * // ...
+ *
+ * // parse backend options
+ * glip_parse_option_string(backend_optionstring, &backend_options,
+ *                          &num_backend_options);
+ *
+ * // initialize GLIP library as usual
+ * glip_new(&glip_ctx, backend_name, backend_options, num_backend_options);
+ * @endcode
+ *
+ * @param[in]   str input string
+ * @param[out]  options input string
+ * @param[out]  num_options size of @p options
+ * @return      0 if the call was successful, or an error code if something went
+ *              wrong
+ *
+ * @ingroup utilities
+ */
+API_EXPORT
+int glip_parse_option_string(char* str, struct glip_option* options[],
+                             size_t *num_options)
+{
+    char *opt;
+    int count = 0;
+
+    /* count the number of options */
+    char *strcp = strdup(str);
+    opt = strtok(strcp, ",");
+    if (opt != 0) {
+        count++;
+        while (strtok(0, ",") != 0) {
+            count++;
+        }
+    }
+    free(strcp);
+
+    *num_options = count;
+    if (count <= 0) {
+        return 0;
+    }
+
+    struct glip_option *optvec;
+    optvec = calloc(count, sizeof(struct glip_option));
+
+    strcp = strdup(str);
+    opt = strtok(str, ",");
+    int i = 0;
+    do {
+        char *sep = index(opt, '=');
+        if (sep) {
+            optvec[i].name = strndup(opt, sep - opt);
+            optvec[i].value = strndup(sep + 1, opt + strlen(opt) - sep);
+        } else {
+            optvec[i].name = strdup(opt);
+            optvec[i].value = 0;
+        }
+        opt = strtok(0, ",");
+        i++;
+    } while (opt);
+
+    free(strcp);
+    *options = optvec;
 
     return 0;
 }
