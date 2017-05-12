@@ -478,7 +478,7 @@ int glip_open(struct glip_ctx *ctx, unsigned int num_channels)
 
     rv = ctx->backend_functions.open(ctx, num_channels);
     if (rv != 0) {
-        err(ctx, "Cannot open backend\n");
+        err(ctx, "Cannot open backend (rv=%d)\n", rv);
         return -1;
     }
 
@@ -777,7 +777,7 @@ int glip_option_get_uint32(struct glip_ctx* ctx, const char* option_name,
     }
 
     if (!found) {
-        info(ctx, "Option with key '%s' not found.\n", option_name);
+        dbg(ctx, "Option with key '%s' not found.\n", option_name);
         return -1;
     }
 
@@ -882,7 +882,7 @@ int glip_option_get_char(struct glip_ctx* ctx, const char* option_name,
     }
 
     if (!found) {
-        info(ctx, "Option with key '%s' not found.\n", option_name);
+        dbg(ctx, "Option with key '%s' not found.\n", option_name);
         return -1;
     }
 
