@@ -1232,7 +1232,7 @@ int start_openocd(struct glip_ctx *ctx)
         err(ctx, "Starting OpenOCD failed.\n"
             "The string '%s', indicating successful startup, did not appear "
             "in the OpenOCD output.\n"
-            "Did you load the bitstream to the FPGA and connect all cabled?\n",
+            "Did you load the bitstream to the FPGA and connect all cables?\n",
             search_string);
 
         close_openocd(ctx);
