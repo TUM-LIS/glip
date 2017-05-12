@@ -66,9 +66,9 @@ static const struct usb_dev_entry usb_devs[] = {
 
 /* USB device constants */
 /** USB write endpoint */
-const int USB_WR_EP = 0x01 | LIBUSB_ENDPOINT_OUT; /* EP1 OUT */
+static const int USB_WR_EP = 0x01 | LIBUSB_ENDPOINT_OUT; /* EP1 OUT */
 /** USB read endpoint */
-const int USB_RD_EP = 0x01 | LIBUSB_ENDPOINT_IN; /* EP1 IN */
+static const int USB_RD_EP = 0x01 | LIBUSB_ENDPOINT_IN; /* EP1 IN */
 
 /**
  * USB read timeout [ms]
@@ -76,19 +76,19 @@ const int USB_RD_EP = 0x01 | LIBUSB_ENDPOINT_IN; /* EP1 IN */
  * This timeout should be rather small to achieve good performance even for
  * small reads.
  */
-const int USB_RX_TIMEOUT_MS = 2; /* 2 ms */
+static const int USB_RX_TIMEOUT_MS = 2; /* 2 ms */
 
 /**
  * USB write timeout [ms]
  *
  * This value can be rather large without impacting performance.
  */
-const int USB_TX_TIMEOUT_MS = 1000; /* 1 second */
+static const int USB_TX_TIMEOUT_MS = 1000; /* 1 second */
 
 /**
  * the timeout after which a USB read or write transfer is triggered [ms]
  */
-const int USB_TRANSFER_RETRY_TIMEOUT_MS = 5;
+static const int USB_TRANSFER_RETRY_TIMEOUT_MS = 5;
 
 /**
  * Packet/block size for USB bulk transfers [byte]
@@ -126,6 +126,11 @@ const int USB_TRANSFER_RETRY_TIMEOUT_MS = 5;
  */
 #define USB_BUF_SIZE (USB_TRANSFER_PACKET_SIZE_BYTES * \
                       USB_MAX_PACKETS_PER_TRANSFER * 2)
+
+
+static void* usb_read_thread(void* ctx_void);
+static void* usb_write_thread(void* ctx_void);
+
 
 /**
  * GLIP backend context for the Cypress FX3 backend
@@ -725,7 +730,7 @@ int gb_cypressfx3_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 /**
  * Thread: write data to the USB device
  */
-void* usb_write_thread(void* ctx_void)
+static void* usb_write_thread(void* ctx_void)
 {
     struct glip_ctx *ctx = ctx_void;
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
@@ -857,7 +862,7 @@ void* usb_write_thread(void* ctx_void)
 /**
  * Thread: read data from the USB device
  */
-void* usb_read_thread(void* ctx_void)
+static void* usb_read_thread(void* ctx_void)
 {
     struct glip_ctx *ctx = ctx_void;
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
