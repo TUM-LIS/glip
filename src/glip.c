@@ -107,6 +107,8 @@ const struct glip_version * glip_get_version(void)
  * @param[in]  backend_options options (key/value pairs) for the library and the
  *                          backend
  * @param[in]  num_backend_options  number of entries in the @p options array
+ * @param[in]  log_fn       the logging function to send all log messages to
+ *                          if set to NULL, all logs will go to STDERR
  * @return     0 if the call was successful
  * @return     -GLIP_EUNKNOWNBACKEND the specified @p backend_name is not
  *             available
@@ -117,7 +119,7 @@ const struct glip_version * glip_get_version(void)
 API_EXPORT
 int glip_new(struct glip_ctx **ctx, char* backend_name,
              struct glip_option backend_options[],
-             size_t num_backend_options)
+             size_t num_backend_options, glip_log_fn log_fn)
 {
     struct glip_ctx *c = calloc(1, sizeof(struct glip_ctx));
     if (!c) {
@@ -130,7 +132,11 @@ int glip_new(struct glip_ctx **ctx, char* backend_name,
     /*
      * Setup the logging infrastructure
      */
-    c->log_fn = log_stderr;
+    if (log_fn == NULL) {
+        c->log_fn = log_stderr;
+    } else {
+        c->log_fn = log_fn;
+    }
     c->log_priority = LOG_ERR;
 
     /* environment overwrites config */

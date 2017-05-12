@@ -205,7 +205,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    glip_new(&glip_ctx, backend_name, backend_options, num_backend_options);
+    glip_new(&glip_ctx, backend_name, backend_options, num_backend_options,
+             NULL /* log_fn */);
 
     rv = glip_open(glip_ctx, 1);
     if (rv < 0) {
