@@ -32,10 +32,10 @@ module glip_cypressfx3_toplevel
 #(
    parameter WIDTH = 16,
    parameter BUFFER_DEPTH = 512,
-   parameter FREQ = 32'd100_000_000
+   parameter FREQ_CLK_IO = 32'd100_000_000
 )(
    // Cypress FX3 ports
-   input                 fx3_pclk,
+   output                fx3_pclk,
    inout [WIDTH-1:0]     fx3_dq,
    output                fx3_slcs_n,
    output                fx3_sloe_n,
@@ -52,8 +52,9 @@ module glip_cypressfx3_toplevel
    output [2:0]          fx3_pmode,
 
    // Clock/Reset
-   input                 clk,
-   input rst,
+   input                 clk, // logic clock (used for all fifo_* signals)
+   input                 rst,
+   input                 clk_io, // I/O clock (passed to FX3 as fx3_pclk)
 
    // GLIP FIFO Interface
    input                 fifo_out_valid,
@@ -73,6 +74,9 @@ module glip_cypressfx3_toplevel
    localparam FX3_EPIN = 2'b00;
 
    assign ctrl_logic_rst = fx3_logic_rst;
+
+   // pass through I/O clock to FX3
+   assign fx3_pclk = clk_io;
 
    wire                                            int_rst;
    assign int_rst = fx3_com_rst | rst;
@@ -145,16 +149,16 @@ module glip_cypressfx3_toplevel
    assign fx3_a = fifoadr;
    assign fx3_pktend_n = ~pktend;
 
-   // The timing from the FX3 FSM changes at high clock frequencies.
+   // The timing of the FX3 FSM changes at high clk_io/fx3_pclk frequencies.
    // 70MHz chosen as threshold since frequencies between 63MHz and 80MHz should
    // be avoided anyways.
    generate
-      if (FREQ <= 32'd70_000_000) begin
+      if (FREQ_CLK_IO <= 32'd70_000_000) begin
          // Delay for reading from slave fifo (data will be available after
          // two clk cycles)
          reg         rd_delay;
-         always @(posedge fx3_pclk, posedge int_rst) begin
-            if(int_rst) begin
+         always @(posedge clk_io, posedge int_rst) begin
+            if (int_rst) begin
                rd_delay <= 1'b0;
                int_fifo_in_valid <= 1'b0;
             end else begin
@@ -162,12 +166,12 @@ module glip_cypressfx3_toplevel
                int_fifo_in_valid <= rd_delay;
             end
          end
-      end else if (FREQ > 32'd70_000_000) begin
+      end else if (FREQ_CLK_IO > 32'd70_000_000) begin
          // Delay for reading from slave fifo (data will be available after
          // three clk cycles)
          reg [1:0]   rd_delay;
-         always @(posedge fx3_pclk, posedge int_rst) begin
-            if(int_rst) begin
+         always @(posedge clk_io, posedge int_rst) begin
+            if (int_rst) begin
                rd_delay[0] <= 1'b0;
                rd_delay[1] <= 1'b0;
                int_fifo_in_valid <= 1'b0;
@@ -219,7 +223,7 @@ module glip_cypressfx3_toplevel
    // Debugging aid: count the number of received words. To be used as trigger
    // signal when the host software tells us "failed verification at word XY".
    (* mark_debug = "yes" *) reg [31:0] dbg_word_cnt;
-   always @(posedge fx3_pclk) begin
+   always @(posedge clk_io) begin
       if (int_rst) begin
          dbg_word_cnt <= 0;
       end else begin
@@ -230,7 +234,7 @@ module glip_cypressfx3_toplevel
    end
    */
 
-   always @(posedge fx3_pclk) begin
+   always @(posedge clk_io) begin
       if (int_rst) begin
          state <= STATE_IDLE;
          idle_counter <= 0;
@@ -278,15 +282,15 @@ module glip_cypressfx3_toplevel
             fifoadr = FX3_EPIN;
             // If outgoing CDC FIFO contains data and FX3 FIFO on path to host
             // has enough space -> write data to FX3
-            if(!fx3_in_full && !int_fifo_out_empty) begin
+            if (!fx3_in_full && !int_fifo_out_empty) begin
                nxt_state = STATE_FLG_A_RCVD;
                // Send zero-length packet after time-out to flush fx3_in_fifo
-            end else if(flush) begin
+            end else if (flush) begin
                fifoadr = FX3_EPIN;
                nxt_state = STATE_WRITE_FLUSH;
                // If FX3 FIFO on path from host contains data and incoming CDC
                // FIFO has enough space -> read data from FX3
-            end else if(!fx3_out_empty && !int_fifo_in_almost_full) begin
+            end else if (!fx3_out_empty && !int_fifo_in_almost_full) begin
                // We can read from FX3 if data is available and we can
                // receive data. We have to use the almost full
                // signal as we need to be capable of reading 3 words (1
@@ -305,12 +309,12 @@ module glip_cypressfx3_toplevel
 
          STATE_WAIT_FLG_B: begin
             fifoadr = FX3_EPIN;
-            if(fx3_in_full) begin
+            if (fx3_in_full) begin
                nxt_idle_counter = FORCE_SEND_TIMEOUT;
                nxt_state = STATE_IDLE;
-            end else if(!fx3_in_almost_full) begin
+            end else if (!fx3_in_almost_full) begin
                nxt_state = STATE_WRITE;
-            end else if(swrw_count == 1) begin
+            end else if (swrw_count == 1) begin
                nxt_state = STATE_SW_WRITE;
             end
          end
@@ -319,12 +323,12 @@ module glip_cypressfx3_toplevel
             fifoadr = FX3_EPIN;
             wr = 1;
             int_fifo_out_ready = 1;
-            if(int_fifo_out_empty) begin
+            if (int_fifo_out_empty) begin
                wr = 0;
                int_fifo_out_ready = 0;
                nxt_idle_counter = FORCE_SEND_TIMEOUT;
                nxt_state = STATE_IDLE;
-            end else if(fx3_in_almost_full) begin
+            end else if (fx3_in_almost_full) begin
                nxt_state = STATE_WRITE_DRAIN_1;
             end
          end
@@ -339,7 +343,7 @@ module glip_cypressfx3_toplevel
 
          STATE_SW_WRITE_WAITFLG: begin
             fifoadr = FX3_EPIN;
-            if(nxt_swrw_count == 1) begin
+            if (nxt_swrw_count == 1) begin
                nxt_idle_counter = FORCE_SEND_TIMEOUT;
                nxt_state = STATE_IDLE;
             end
@@ -364,7 +368,7 @@ module glip_cypressfx3_toplevel
             fifoadr = FX3_EPIN;
             nxt_flush = 0;
             nxt_state = STATE_IDLE;
-            if(!fx3_in_full) begin
+            if (!fx3_in_full) begin
                pktend = 1;
             end
          end
@@ -377,9 +381,9 @@ module glip_cypressfx3_toplevel
 
          STATE_WAIT_FLG_D: begin
             fifoadr = FX3_EPOUT;
-            if(!fx3_out_almost_empty) begin
+            if (!fx3_out_almost_empty) begin
                nxt_state = STATE_READ;
-            end else if(swrw_count == 1) begin
+            end else if (swrw_count == 1) begin
                nxt_state = STATE_SW_READ;
             end
          end
@@ -388,9 +392,9 @@ module glip_cypressfx3_toplevel
             fifoadr = FX3_EPOUT;
             rd = 1;
             oe = 1;
-            if(int_fifo_in_almost_full) begin
+            if (int_fifo_in_almost_full) begin
                nxt_state = STATE_READ_DRAIN_4;
-            end else if(fx3_out_almost_empty) begin
+            end else if (fx3_out_almost_empty) begin
                nxt_state = STATE_READ_DRAIN_1;
             end
          end
@@ -455,8 +459,8 @@ module glip_cypressfx3_toplevel
    cdc_fifo
       #(.DW(WIDTH))
    u_ingress_cdc(
-      // write side (fx3_pclk)
-      .wr_clk           (fx3_pclk),
+      // write side (clk_io)
+      .wr_clk           (clk_io),
       .wr_rst           (~int_rst),
       .wr_full          (ingress_cdc_wr_full),
       .wr_data          (ingress_cdc_wr_data),
@@ -538,7 +542,7 @@ module glip_cypressfx3_toplevel
       .wr_data          (egress_cdc_wr_data),
       .wr_en            (egress_cdc_wr_en),
 
-      .rd_clk           (fx3_pclk),
+      .rd_clk           (clk_io),
       .rd_rst           (~int_rst),
       .rd_empty         (egress_cdc_rd_empty),
       .rd_data          (egress_cdc_rd_data),

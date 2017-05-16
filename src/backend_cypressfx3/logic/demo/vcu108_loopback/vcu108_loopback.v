@@ -73,8 +73,6 @@ module vcu108_loopback
       .clk_in_n (clk_n),
       .clk_out  (clk));
 
-   assign fx3_pclk = clk;
-
    wire [WIDTH-1:0]  loop_data;
    wire 	     loop_valid;
    wire 	     loop_ready;
@@ -83,14 +81,15 @@ module vcu108_loopback
 
    glip_cypressfx3_toplevel
       #(.WIDTH(WIDTH),
-      .FREQ(FREQ))
+      .FREQ_CLK_IO(FREQ))
    u_glib_cypressfx3(
       // Clock/Reset
       .clk     (clk),
+      .clk_io  (clk),
       .rst     (),
 
       // Cypress FX3 ports
-      .fx3_pclk      (clk),
+      .fx3_pclk      (fx3_pclk),
       .fx3_dq        (fx3_dq),
       .fx3_slcs_n    (fx3_slcs_n),
       .fx3_sloe_n    (fx3_sloe_n),

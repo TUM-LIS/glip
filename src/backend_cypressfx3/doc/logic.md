@@ -15,6 +15,7 @@ careful as the output polarity can be changed in the FX3 firmware!
 
 | Port Name     | Width    | Direction | Description                          |
 |---------------|:--------:|:---------:|--------------------------------------|
+| clk_io        | 1        | IN        | I/O clock (forwarded to fx3_pclk)    |
 | fx3_pclk      | 1        | OUT       | interface clock (supplied by FPGA)   |
 | fx3_dq        | 16/32    | INOUT     | data bus. Can be 16 or 32 bit wide   |
 | fx3_slcs_n    | 1        | OUT       | chip select                          |
@@ -29,6 +30,15 @@ careful as the output polarity can be changed in the FX3 firmware!
 | fx3_flagd_n   | 1        | IN        | GPIF-II socket 3 buffer almost empty |
 | fx3_com_rst   | 1        | IN        | communication reset                  |
 | fx3_logic_rst | 1        | IN        | logic reset                          |
+
+The following parameters are available.
+
+| Name         | Description                         |
+|--------------|-------------------------------------|
+| FREQ_CLK_IO  | Frequency of the I/O clock `clk_io` |
+| WIDTH        | Width of the FIFO (`fifo_*`) ports. Supported values: 16 and 32. Default: 16. You need to use the corresponding firmware for the chosen width! |
+| BUFFER_DEPTH | Size of the input and output buffers on the FPGA in bytes. Default: 512 bytes |
+
 
 USB Endpoint 1 (EP1) is the OUT endpoint, transferring data from the host to the
 device, as well as the IN endpoint, transferring data from the device to the host

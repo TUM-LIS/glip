@@ -77,9 +77,6 @@ module kc705_loopback
       .clk_out  (clk),
       .locked   (clk_locked),
       .rst      (fx3_com_rst));
-   
-   assign fx3_pclk = clk;
-   
    wire [WIDTH-1:0]  loop_data;
    wire 	     loop_valid;
    wire 	     loop_ready;
@@ -87,14 +84,15 @@ module kc705_loopback
 
    glip_cypressfx3_toplevel
       #(.WIDTH(WIDTH),
-      .FREQ(FREQ))
+      .FREQ_CLK_IO(FREQ))
    u_glib_cypressfx3(
       // Clock/Reset
       .clk     (clk),
+      .clk_io  (clk),
       .rst     (),
 
       // Cypress FX3 ports
-      .fx3_pclk      (clk),
+      .fx3_pclk      (fx3_pclk),
       .fx3_dq        (fx3_dq),
       .fx3_slcs_n    (fx3_slcs_n),
       .fx3_sloe_n    (fx3_sloe_n),
