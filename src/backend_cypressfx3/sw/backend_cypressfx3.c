@@ -327,9 +327,13 @@ int gb_cypressfx3_open(struct glip_ctx *ctx, unsigned int num_channels)
             /* if we're here we found a match! */
             found_cnt++;
             found_dev_idx = dev_idx;
+
             /* Serial number is used to determine the FIFO width. */
             ctx->backend_ctx->fifo_width = desc.iSerialNumber;
             assert(ctx->backend_ctx->fifo_width != 0);
+            info(ctx, "Detected FX3 firmware with %u bit FIFO width.\n",
+                 ctx->backend_ctx->fifo_width * 8);
+
             break;
         }
     }
@@ -852,7 +856,7 @@ static void* usb_write_thread(void* ctx_void)
          * See https://github.com/TUM-LIS/glip/issues/36 for more information.
          */
         if (is_full_transfer && cbuf_fill_level(bctx->write_buf) == 0) {
-            dbg(ctx, "Sending a zero-length packet to signal the end of the"
+            dbg(ctx, "Sending a zero-length packet to signal the end of the "
                      "transfer.\n");
 
             rv = libusb_bulk_transfer(bctx->usb_dev_handle, USB_WR_EP,
