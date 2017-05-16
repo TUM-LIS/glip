@@ -4,7 +4,8 @@
 The GLIP logic provides the interface between the GPIF-II of the Cypress FX3 chip
 and the user logic. Since the GPIF-II already provides a FIFO interface, the
 logic is rather minimal and consists mainly of the required clock-domain crossing
-infrastructure and down-/upscaling to/from 16 bit words.
+infrastructure and a state machine to compensate for the read/write delays of
+the FX3.
 
 The Verilog toplevel module `glip_cypressfx3_toplevel` implements the
 [common GLIP logic interface](@ref logicif). The following additional ports are

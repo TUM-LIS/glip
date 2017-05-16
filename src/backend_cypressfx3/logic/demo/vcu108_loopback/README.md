@@ -70,11 +70,6 @@ Ensure that you have set the jumpers to the following settings:
  * Jumper J4 (PMODE) is not set (open)
  * Jumper J5 (SRAM ENABLE) is not set (open)
 
-Jumper J2 sets the I/O voltage to 3.3V.
-The KC705 should always operate with its FMC I/Os set to 3.3V.
-Otherwise it does not create a clean clock signal for frequencies greater than ~40MHz.
-With the I/Os set to 3.3V the FX3 can run at 100MHz, but frequencies between 63MHz and 85MHz should be avoided.
-
 
 Connect the FX3 board to the FPGA
 ---------------------------------
