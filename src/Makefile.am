@@ -20,7 +20,8 @@ AM_LDFLAGS += $(libusb_LIBS)
 endif
 
 if BACKEND_CYPRESSFX3
-libglip_la_SOURCES += backend_cypressfx3/sw/backend_cypressfx3.c
+libglip_la_SOURCES += backend_cypressfx3/sw/backend_cypressfx3.c \
+	backend_cypressfx3/sw/interface.c
 AM_CFLAGS += $(libusb_CFLAGS)
 AM_LDFLAGS += $(libusb_LIBS)
 endif

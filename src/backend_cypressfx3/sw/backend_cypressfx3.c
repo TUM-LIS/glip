@@ -28,6 +28,7 @@
  *   Stefan Wallentowitz <stefan.wallentowitz@tum.de>
  */
 
+#include "interface.h"
 #include "backend_cypressfx3.h"
 #include "glip-protected.h"
 #include "cbuf.h"
@@ -50,6 +51,7 @@ struct usb_dev_entry {
     uint16_t vid;
     /** product id (idProduct) */
     uint16_t pid;
+    const char *firmware_interface;
 };
 
 /** A list of well-known supported devices with Cypress FX3 chip */
@@ -57,18 +59,17 @@ static const struct usb_dev_entry usb_devs[] = {
     /* FX3 superspeed explorer boards */
     {
         .vid = 0x04b4,
-        .pid = 0x00f1
+        .pid = 0x00f1,
+        .firmware_interface = "OpTiMSoC"
+    },
+    /* ZTEX boards */
+    {
+        .vid = 0x221a,
+        .pid = 0x0100,
+        .firmware_interface = "ZTEX"
     },
     {} /* leave this as last element! */
 };
-
-
-
-/* USB device constants */
-/** USB write endpoint */
-static const int USB_WR_EP = 0x01 | LIBUSB_ENDPOINT_OUT; /* EP1 OUT */
-/** USB read endpoint */
-static const int USB_RD_EP = 0x01 | LIBUSB_ENDPOINT_IN; /* EP1 IN */
 
 /**
  * USB read timeout [ms]
@@ -140,6 +141,8 @@ struct glip_backend_ctx {
     struct libusb_context *usb_ctx;
     /** libusb-1.0 device handle */
     struct libusb_device_handle *usb_dev_handle;
+
+    struct firmware_interface *firmware_interface;
 
     /** USB sending thread */
     pthread_t usb_write_thread;
@@ -328,8 +331,15 @@ int gb_cypressfx3_open(struct glip_ctx *ctx, unsigned int num_channels)
             found_cnt++;
             found_dev_idx = dev_idx;
 
+            const char *fwifname;
+            fwifname = dev_searchlist[dev_searchlist_idx].firmware_interface;
+            struct firmware_interface *fwif;
+            fwif = get_firmware_interface(fwifname);
+            assert(fwif != 0);
+            ctx->backend_ctx->firmware_interface = fwif;
+
             /* Serial number is used to determine the FIFO width. */
-            ctx->backend_ctx->fifo_width = desc.iSerialNumber;
+            ctx->backend_ctx->fifo_width = fwif->get_fifo_width(&desc);
             assert(ctx->backend_ctx->fifo_width != 0);
             info(ctx, "Detected FX3 firmware with %u bit FIFO width.\n",
                  ctx->backend_ctx->fifo_width * 8);
@@ -376,19 +386,9 @@ int gb_cypressfx3_open(struct glip_ctx *ctx, unsigned int num_channels)
     }
 
     /* reset communication */
-    rv = libusb_control_transfer(ctx->backend_ctx->usb_dev_handle, 0x40, 0x60,
-                                 (1 << 0), 0, 0, 0, USB_TX_TIMEOUT_MS);
+    rv = ctx->backend_ctx->firmware_interface->reset_communication(ctx, ctx->backend_ctx->usb_dev_handle);
     if (rv < 0) {
-        err(ctx, "Unable to send USB control message to reset system "
-            "(r=1). Error %d: %s\n", rv, libusb_error_name(rv));
-        return -1;
-    }
-
-    rv = libusb_control_transfer(ctx->backend_ctx->usb_dev_handle, 0x40, 0x60,
-                                 (0 << 0), 0, 0, 0, USB_TX_TIMEOUT_MS);
-    if (rv < 0) {
-        err(ctx, "Unable to send USB control message to reset system (r=0). "
-            "Error %d: %s\n", rv, libusb_error_name(rv));
+        err(ctx, "Unable to reset communication\n");
         return -1;
     }
 
@@ -493,33 +493,15 @@ int gb_cypressfx3_close(struct glip_ctx *ctx)
  */
 int gb_cypressfx3_logic_reset(struct glip_ctx *ctx)
 {
+    struct firmware_interface *fwif;
+
     if (ctx->backend_ctx->usb_dev_handle == NULL) {
         err(ctx, "Not connected!\n");
         return -1;
     }
 
-    int rv;
-
-    /* set reset signal */
-    rv = libusb_control_transfer(ctx->backend_ctx->usb_dev_handle, 0x40, 0x60,
-                                 (1 << 1), 0, 0, 0, USB_TX_TIMEOUT_MS);
-    if (rv < 0) {
-        err(ctx, "Unable to send USB control message to reset system "
-                 "(r=1). Error %d: %s\n", rv, libusb_error_name(rv));
-        return -1;
-    }
-
-    /* unset reset signal */
-    rv = libusb_control_transfer(ctx->backend_ctx->usb_dev_handle, 0x40, 0x60,
-                                 (0 << 1), 0, 0, 0, USB_TX_TIMEOUT_MS);
-
-    if (rv < 0) {
-        err(ctx, "Unable to send USB control message to reset system (r=0). "
-            "Error %d: %s\n", rv, libusb_error_name(rv));
-        return -1;
-    }
-
-    return 0;
+    fwif = ctx->backend_ctx->firmware_interface;
+    return fwif->reset_logic(ctx, ctx->backend_ctx->usb_dev_handle);
 }
 
 /**
@@ -814,7 +796,7 @@ static void* usb_write_thread(void* ctx_void)
         assert(rv == 0);
 
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-        rv = libusb_bulk_transfer(bctx->usb_dev_handle, USB_WR_EP,
+        rv = libusb_bulk_transfer(bctx->usb_dev_handle, bctx->firmware_interface->wr_ep,
                                   transfer_data, transfer_len,
                                   (int*)&transfer_len_sent, USB_TX_TIMEOUT_MS);
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -859,7 +841,7 @@ static void* usb_write_thread(void* ctx_void)
             dbg(ctx, "Sending a zero-length packet to signal the end of the "
                      "transfer.\n");
 
-            rv = libusb_bulk_transfer(bctx->usb_dev_handle, USB_WR_EP,
+            rv = libusb_bulk_transfer(bctx->usb_dev_handle, bctx->firmware_interface->wr_ep,
                                       transfer_data, 0,
                                       (int*)&transfer_len_sent,
                                       USB_TX_TIMEOUT_MS);
@@ -926,7 +908,7 @@ static void* usb_read_thread(void* ctx_void)
          * is available is returned.
          */
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-        rv = libusb_bulk_transfer(bctx->usb_dev_handle, USB_RD_EP,
+        rv = libusb_bulk_transfer(bctx->usb_dev_handle, bctx->firmware_interface->rd_ep,
                                   (unsigned char*)buf,
                                   buf_size,
                                   &received,
