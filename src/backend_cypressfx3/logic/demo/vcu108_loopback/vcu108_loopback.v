@@ -20,7 +20,7 @@
  *
  * =============================================================================
  *
- * GLIP Looback example for the Xilinx KC705 board
+ * GLIP Looback example for the Xilinx VCU108 board
  *
  * Author(s):
  *   Stefan Wallentowitz <stefan.wallentowitz@tum.de>
@@ -58,14 +58,9 @@ module vcu108_loopback
    wire  clk;
    wire  clk_locked;
 
-   // The actual frequency is calculated as:    f = 1200MHz / (1200 / FREQ)
-   // in which (1200 / FREQ) is cropped to an integer.
-   // Working frequencies in MHz are: 100, 92 4/13, 85 5/7, 80, ...
-   // Frequencies 80MHz > f > 63MHz produce wrong output from the FX3 and should be avoided.
-   localparam FREQ = 32'd100_000_000; // choose maximum frequency of 100 MHz
-
+   // Generate 100MHz clock for the FX3
    vcu108_loopback_clock
-      #(.FREQ(FREQ))
+      #(.FREQ(32'd100_000_000))
    u_clock (
       .rst(),
       .locked(),
@@ -80,13 +75,12 @@ module vcu108_loopback
    wire glip_logic_rst;
 
    glip_cypressfx3_toplevel
-      #(.WIDTH(WIDTH),
-      .FREQ_CLK_IO(FREQ))
+      #(.WIDTH(WIDTH))
    u_glib_cypressfx3(
       // Clock/Reset
-      .clk     (clk),
-      .clk_io  (clk),
-      .rst     (),
+      .clk        (clk),
+      .clk_io_100 (clk),
+      .rst        (),
 
       // Cypress FX3 ports
       .fx3_pclk      (fx3_pclk),
