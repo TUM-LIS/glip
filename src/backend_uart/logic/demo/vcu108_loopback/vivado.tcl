@@ -119,6 +119,7 @@ add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
+set_property "generic" "UART0_BAUD=pmod" $obj
 set_property "top" "vcu108_loopback" $obj
 
 # Create 'constrs_1' fileset (if not found)
