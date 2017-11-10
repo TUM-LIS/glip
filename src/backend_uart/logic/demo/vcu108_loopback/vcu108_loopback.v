@@ -27,7 +27,7 @@
  *   Max Koenen <max.koenen@tum.de>
  */
 
-module vcu108
+module vcu108_loopback
   (
    // 125 MHz clock & CPU Reset button
    input        CLK_125MHZ_P,

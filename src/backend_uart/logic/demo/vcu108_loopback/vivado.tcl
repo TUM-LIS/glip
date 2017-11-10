@@ -65,16 +65,16 @@ if { $::argc > 0 } {
 }
 
 # Set the directory path for the original project from where this script was exported
-set orig_proj_dir "[file normalize "$origin_dir/vcu108"]"
+set orig_proj_dir "[file normalize "$origin_dir/vcu108_loopback"]"
 
 # Create project
-create_project vcu108 ./vivado
+create_project vcu108_loopback ./vivado
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
 
 # Set project properties
-set obj [get_projects vcu108]
+set obj [get_projects vcu108_loopback]
 set_property "default_lib" "xil_defaultlib" $obj
 set_property "part" "xcvu095-ffva2104-2-e" $obj
 set_property "sim.ip.auto_export_scripts" "1" $obj
@@ -89,7 +89,7 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [list \
- "[file normalize "$origin_dir/vcu108.v"]"\
+ "[file normalize "$origin_dir/vcu108_loopback.v"]"\
  "[file normalize "$origin_dir/../../verilog/glip_uart_toplevel.v"]"\
  "[file normalize "$origin_dir/../../verilog/glip_uart_control.v"]"\
  "[file normalize "$origin_dir/../../verilog/glip_uart_control_egress.v"]"\
@@ -119,7 +119,7 @@ add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
-set_property "top" "vcu108" $obj
+set_property "top" "vcu108_loopback" $obj
 
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
@@ -152,7 +152,7 @@ set obj [get_filesets sim_1]
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
-set_property "top" "vcu108" $obj
+set_property "top" "vcu108_loopback" $obj
 set_property "xelab.nosort" "1" $obj
 set_property "xelab.unifast" "" $obj
 
