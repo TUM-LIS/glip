@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016 by the author(s)
+/* Copyright (c) 2015-2017 by the author(s)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
  *
  * =============================================================================
  *
- * VCU108 board demo
+ * VCU108 loopback demo
  *
  * Author(s):
  *   Stefan Wallentowitz <stefan.wallentowitz@tum.de>
