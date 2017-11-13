@@ -127,15 +127,13 @@ static void update_debt(struct glip_backend_ctx* ctx, uint8_t first,
                         uint8_t second);
 
 /**
- * Give credit to logic
+ * Inform the target about the number of bytes we can receive
  *
  * @private
- * Increase credit of logic by tranche
  *
  * @param ctx Context
- * @param tranche Value to add to credit
  */
-static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche);
+static int update_credit(struct glip_backend_ctx* ctx);
 
 /**
  * Reset the backend
@@ -742,9 +740,8 @@ static int reset_com(struct glip_ctx *ctx, uint8_t state)
     return write_blocking(bctx->fd, reset, 2, &written, 0);
 }
 
-int total = 0;
-
-void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer, size_t size)
+void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer,
+                  size_t size)
 {
     size_t actual, i;
     int rv;
@@ -779,6 +776,14 @@ void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer, size_t size)
             } else {
                 /* If the next item was not in buffer, read another one,
                  * we can now reuse the buffer */
+
+                /* Make sure that the target has enough credits to send the
+                 * second data item. */
+                while (ctx->credit < 2) {
+                    usleep(10);
+                    update_credit(ctx);
+                }
+
                 rv = read_blocking(ctx->fd, buffer, 1, &actual, 0);
                 assert(rv == 0);
 
@@ -882,11 +887,8 @@ static void* thread_func(void *ctx_void)
         }
 
         /* Update credit if necessary */
-        if (bctx->credit < bctx->buffer_size - UART_MAX_TRANCHE) {
-            /* Give new credit */
-            bctx->credit += UART_MAX_TRANCHE;
-
-            send_credit(bctx, UART_MAX_TRANCHE);
+        if (bctx->credit < UART_MAX_TRANCHE) {
+            update_credit(bctx);
         }
     }
 
@@ -998,19 +1000,30 @@ static void update_debt(struct glip_backend_ctx* ctx, uint8_t first,
     ctx->debt += (((first >> 1) & 0x7f) << 8) | second;
 }
 
-static int send_credit(struct glip_backend_ctx* ctx, uint16_t tranche)
+static int update_credit(struct glip_backend_ctx* ctx)
 {
     uint8_t credit[3];
     size_t written;
+    size_t target_credit_add;
+
+    /* calculate how many credits we can give to the target */
+    target_credit_add = min(cbuf_free_level(ctx->input_buffer) - ctx->credit,
+                            UART_MAX_TRANCHE);
+    if (target_credit_add == 0) {
+        return -1;
+    }
 
     /* Assemble the message datagrams */
     credit[0] = 0xfe;
-    credit[1] = 0x1 | ((tranche >> 8) << 1);
-    credit[2] = tranche & 0xff;
+    credit[1] = 0x1 | ((target_credit_add >> 8) << 1);
+    credit[2] = target_credit_add & 0xff;
 
     if (write_blocking(ctx->fd, credit, 3, &written, 0) != 0) {
         return -1;
     }
+
+    /* update local representation of the credit counter */
+    ctx->credit += target_credit_add;
 
     return 0;
 }
@@ -1046,11 +1059,10 @@ static int reset(struct glip_ctx* ctx)
     assert(rv == 0);
 
     /* Reset values to defaults */
-    bctx->credit = UART_MAX_TRANCHE;
     bctx->debt = 0;
 
     /* Send our initial credit tranche to the logic */
-    send_credit(bctx, UART_MAX_TRANCHE);
+    update_credit(bctx);
 
     /* Read the debt from the logic */
     uint8_t debt[3];
