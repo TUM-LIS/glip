@@ -169,10 +169,13 @@ void parse_buffer(struct glip_backend_ctx *ctx, uint8_t *buffer,
                   size_t size);
 
 /** Maximum tranche we can give in a message */
-static const uint16_t UART_MAX_TRANCHE = 0x3fff;
+static const size_t UART_MAX_TRANCHE = 0x3fff;
 
 /** Temporary buffer size */
-static const uint16_t TMP_BUFFER_SIZE = 256;
+static const size_t TMP_BUFFER_SIZE = 256;
+
+/** Size in bytes of the read/write buffer */
+static const size_t UART_BUF_SIZE = 32 * 1024; // bytes
 
 /**
  * GLIP backend context for the UART backend
@@ -183,8 +186,6 @@ struct glip_backend_ctx {
     uint32_t speed; /**< Baud rate */
 
     pthread_t thread; /**< Thread instance */
-
-    size_t buffer_size; /**< Size of circular buffers */
 
     struct cbuf *input_buffer; /**< Input buffer */
     struct cbuf *output_buffer; /**< Output buffer */
@@ -228,12 +229,11 @@ int gb_uart_new(struct glip_ctx *ctx)
     ctx->backend_ctx = c;
 
     /* Set the local buffer sizes and initialize */
-    c->buffer_size = 32768;
-    if (cbuf_init(&c->input_buffer, c->buffer_size) != 0) {
+    if (cbuf_init(&c->input_buffer, UART_BUF_SIZE) != 0) {
         return -1;
     }
 
-    if (cbuf_init(&c->output_buffer, c->buffer_size) != 0) {
+    if (cbuf_init(&c->output_buffer, UART_BUF_SIZE) != 0) {
         return -1;
     }
 
@@ -552,14 +552,15 @@ int gb_uart_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         return -1;
     }
 
-    if (size > bctx->buffer_size) {
+    if (size > cbuf_size(bctx->input_buffer)) {
         /*
          * This is not a problem for non-blocking reads, but blocking reads will
          * block forever in this case as the maximum amount of data ever
          * available is limited by the buffer size.
          * @todo: This can be solved by loop-reading until timeout
          */
-        err(ctx, "The read size cannot be larger than %lu bytes.", bctx->buffer_size);
+        err(ctx, "The read size cannot be larger than %lu bytes.",
+            cbuf_size(bctx->input_buffer));
         return -1;
     }
 
