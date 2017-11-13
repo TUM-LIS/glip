@@ -182,6 +182,7 @@ struct glip_backend_ctx {
     char *device; /**< Device name */
     int fd; /**< Terminal file */
     uint32_t speed; /**< Baud rate */
+    unsigned int fifo_width; /**< Width of the FIFO on the target in bytes */
 
     pthread_t thread; /**< Thread instance */
 
@@ -222,7 +223,11 @@ int gb_uart_new(struct glip_ctx *ctx)
     ctx->backend_functions.write = gb_uart_write;
     ctx->backend_functions.write_b = gb_uart_write_b;
     ctx->backend_functions.get_fifo_width = gb_uart_get_fifo_width;
+    ctx->backend_functions.set_fifo_width = gb_uart_set_fifo_width;
     ctx->backend_functions.get_channel_count = gb_uart_get_channel_count;
+
+    /* Initially the FIFO width is unknown */
+    c->fifo_width = 0;
 
     ctx->backend_ctx = c;
 
@@ -509,6 +514,8 @@ int gb_uart_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
     size_t fill_level = cbuf_fill_level(bctx->input_buffer);
     /* We read as much as possible up to size */
     size_t size_read_req = min(fill_level, size);
+    /* Ensure reading only full words */
+    size_read_req -= size_read_req % gb_uart_get_fifo_width(ctx);
 
     /* Read from buffer */
     int rv = cbuf_read(bctx->input_buffer, data, size_read_req);
@@ -711,7 +718,24 @@ unsigned int gb_uart_get_channel_count(struct glip_ctx *ctx)
  */
 unsigned int gb_uart_get_fifo_width(struct glip_ctx *ctx)
 {
-    return 1;
+    return ctx->backend_ctx->fifo_width;
+}
+
+/**
+ * Set the width of the FIFO on the target side in bytes
+ *
+ * The UART backend has no way to auto-detect the WIDTH parameter as its used
+ * on the glip_uart_toplevel on the target. API users therefore must set the
+ * width manually.
+ */
+int gb_uart_set_fifo_width(struct glip_ctx *ctx, unsigned int fifo_width_bytes)
+{
+    if (fifo_width_bytes != 1 && fifo_width_bytes != 2) {
+        err(ctx, "The UART backend supports only 1 and 2 byte wide FIFOs.\n");
+        return -1;
+    }
+    ctx->backend_ctx->fifo_width = fifo_width_bytes;
+    return 0;
 }
 
 static int reset_logic(struct glip_ctx *ctx, uint8_t state)

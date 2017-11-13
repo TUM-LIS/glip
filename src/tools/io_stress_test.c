@@ -307,16 +307,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // The uart backend currently falsly returns a FIFO width of 1 byte, which
-    // would cause an error for the stress test.
-    // See glip issue #50
-    if(strcmp(backend_name, "uart") == 0) {
-        // Assume 16-bit interface for uart
-        fifo_width_bytes = 2;
+    // The UART backend has no way to auto-discover the width of the FIFO
+    // on the target side. The I/O stresstest hardware demo uses 16 bit FIFOs,
+    // tell GLIP about that.
+    if (strcmp(backend_name, "uart") == 0) {
+        rv = glip_set_fifo_width(glip_ctx, 2);
+        assert(rv == 0);
     }
-    else {
-        fifo_width_bytes = glip_get_fifo_width(glip_ctx);
-    }
+
+    fifo_width_bytes = glip_get_fifo_width(glip_ctx);
 
     if ((transfer_size * 1024 * 1024) % fifo_width_bytes != 0) {
         fprintf(stderr, "ERROR: The transfer size must be a multiple of the "
