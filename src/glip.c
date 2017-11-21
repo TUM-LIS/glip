@@ -117,7 +117,7 @@ const struct glip_version * glip_get_version(void)
  * @ingroup library-init-deinit
  */
 API_EXPORT
-int glip_new(struct glip_ctx **ctx, char* backend_name,
+int glip_new(struct glip_ctx **ctx, const char* backend_name,
              struct glip_option backend_options[],
              size_t num_backend_options, glip_log_fn log_fn)
 {
@@ -954,7 +954,7 @@ int glip_option_get_char(struct glip_ctx* ctx, const char* option_name,
  * @ingroup utilities
  */
 API_EXPORT
-int glip_parse_option_string(char* str, struct glip_option* options[],
+int glip_parse_option_string(const char* str, struct glip_option* options[],
                              size_t *num_options)
 {
     char *opt;
@@ -980,7 +980,7 @@ int glip_parse_option_string(char* str, struct glip_option* options[],
     optvec = calloc(count, sizeof(struct glip_option));
 
     strcp = strdup(str);
-    opt = strtok(str, ",");
+    opt = strtok(strcp, ",");
     int i = 0;
     do {
         char *sep = index(opt, '=');
