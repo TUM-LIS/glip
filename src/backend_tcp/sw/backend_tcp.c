@@ -249,7 +249,7 @@ int gb_tcp_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
                 uint8_t *data, size_t *size_read)
 {
     if (channel != 0) {
-        err(ctx, "Only channel 0 is supported by the tcp backend");
+        err(ctx, "Only channel 0 is supported by the tcp backend\n");
         return -1;
     }
 
