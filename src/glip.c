@@ -118,7 +118,7 @@ const struct glip_version * glip_get_version(void)
  */
 API_EXPORT
 int glip_new(struct glip_ctx **ctx, const char* backend_name,
-             struct glip_option backend_options[],
+             const struct glip_option backend_options[],
              size_t num_backend_options, glip_log_fn log_fn)
 {
     struct glip_ctx *c = calloc(1, sizeof(struct glip_ctx));
@@ -176,7 +176,13 @@ int glip_new(struct glip_ctx **ctx, const char* backend_name,
      * Initialize the backend. This also sets all vtable pointers for the
      * backend functions.
      */
-    c->backend_options = backend_options;
+    c->backend_options = malloc(sizeof(struct glip_option)
+                                * num_backend_options);
+    if (!c->backend_options) {
+        return -ENOMEM;
+    }
+    memcpy(c->backend_options, backend_options,
+           sizeof(struct glip_option) * num_backend_options);
     c->num_backend_options = num_backend_options;
     glip_backends[backend_id].new(c);
 
@@ -200,6 +206,7 @@ int glip_new(struct glip_ctx **ctx, const char* backend_name,
 API_EXPORT
 int glip_free(struct glip_ctx *ctx)
 {
+    free(ctx->backend_options);
     free(ctx);
     return 0;
 }

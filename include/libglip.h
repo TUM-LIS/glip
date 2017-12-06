@@ -102,7 +102,7 @@ struct glip_version {
 const struct glip_version * glip_get_version(void);
 
 int glip_new(struct glip_ctx **ctx, const char* backend_name,
-             struct glip_option options[], size_t num_options,
+             const struct glip_option options[], size_t num_options,
              glip_log_fn log_fn);
 int glip_free(struct glip_ctx *ctx);
 
