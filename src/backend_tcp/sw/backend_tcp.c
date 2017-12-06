@@ -260,7 +260,11 @@ int gb_tcp_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
         *size_read = 0;
         if (errno == EAGAIN) {
             return 0;
+        } else if (errno == EBADF) {
+            dbg(ctx, "TCP connection was closed during read.\n");
+            return -ENOTCONN;
         } else {
+            dbg(ctx, "TCP read() returned %zd (errno = %d)\n", rsize, errno);
             return -1;
         }
     }
@@ -290,8 +294,7 @@ int gb_tcp_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         size_t size_remaining = size - size_read_tmp;
         rv = gb_tcp_read(ctx, channel, size_remaining, &data[size_read_tmp], &sr);
         if (rv != 0) {
-            err(ctx, "TCP read error!\n");
-            return -1;
+            return rv;
         }
         size_read_tmp += sr;
 
@@ -366,7 +369,10 @@ int gb_tcp_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
         *size_written = 0;
         if (errno == EAGAIN) {
             return 0;
+        } else if (errno == EBADF) {
+            return -ENOTCONN;
         } else {
+            dbg(ctx, "TCP write() returned %zd (errno = %d)\n", wsize, errno);
             return -1;
         }
     }
@@ -397,8 +403,7 @@ int gb_tcp_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
         rv = gb_tcp_write(ctx, channel, size_remaining,
                           &data[size_written_tmp], &sw);
         if (rv != 0) {
-            err(ctx, "TCP write error!\n");
-            return -1;
+            return rv;
         }
         size_written_tmp += sw;
 

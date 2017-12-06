@@ -606,8 +606,9 @@ int glip_logic_reset(struct glip_ctx *ctx)
  * @param[out] size_read  the number of bytes actually read from the target.
  *                        Only those bytes may be considered valid inside
  *                        @p data!
- * @return     0 if the call was successful, or an error code if something went
- *             wrong
+ * @return     0 if the call was successful,
+ * @return     -ENOTCONN if the backend is not connected,
+ * @return     any other negative return code indicates an error
  *
  * @ingroup communication
  */
@@ -617,7 +618,7 @@ int glip_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 {
     if (!ctx->connected) {
         err(ctx, "No connection; you need to call glip_open() first!\n");
-        return -1;
+        return -ENOTCONN;
     }
     if (size == 0) {
         *size_read = 0;
@@ -645,8 +646,9 @@ int glip_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
  *                        time
  * @return 0 if the call was successful and @p size bytes have been read
  * @return -ETIMEDOUT if the call timed out (some data might still have been
- *         read, see @p size_read)
- * @return any other value indicates an error
+ *         read, see @p size_read),
+ * @return -ENOTCONN if the backend is not connected,
+ * @return any other negative return code indicates an error
  *
  * Note: You need to allocate sufficient space to read @p size bytes into
  * @p data before calling this function.
@@ -661,7 +663,7 @@ int glip_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 {
     if (!ctx->connected) {
         err(ctx, "No connection; you need to call glip_open() first!\n");
-        return -1;
+        return -ENOTCONN;
     }
     if (size == 0) {
         *size_read = 0;
@@ -704,6 +706,7 @@ int glip_read_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @param[out] size_written the number of bytes actually written; repeat the
  *                          transfer for the remaining data if
  * @return     0 if the call was successful
+ * @return     -ENOTCONN if the backend is not connected
  * @return     any other value indicates an error
  *
  * @see glip_write_b()
@@ -716,7 +719,7 @@ int glip_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 {
     if (!ctx->connected) {
         err(ctx, "No connection; you need to call glip_open() first!\n");
-        return -1;
+        return -ENOTCONN;
     }
     if (size == 0) {
         *size_written = 0;
@@ -745,6 +748,7 @@ int glip_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
  * @return 0 if the call was successful and @p size bytes have been written
  * @return -ETIMEDOUT if the call timed out (some data might still have been
  *         written, see @p size_written)
+ * @return -ENOTCONN if the backend is not connected
  * @return any other value indicates an error
  *
  * @see glip_write()
@@ -757,7 +761,7 @@ int glip_write_b(struct glip_ctx *ctx, uint32_t channel, size_t size,
 {
     if (!ctx->connected) {
         err(ctx, "No connection; you need to call glip_open() first!\n");
-        return -1;
+        return -ENOTCONN;
     }
     if (size == 0) {
         *size_written = 0;
