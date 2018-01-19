@@ -175,7 +175,7 @@ int gb_tcp_open(struct glip_ctx *ctx, unsigned int num_channels)
         return -1;
     }
     bctx->data_ev.data.fd = bctx->data_sfd;
-    struct epoll_event ev;
+    struct epoll_event ev = { 0 };
     ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLPRI | EPOLLET;
     rv = epoll_ctl(bctx->data_efd, EPOLL_CTL_ADD, bctx->data_sfd, &ev);
     if (rv != 0) {
