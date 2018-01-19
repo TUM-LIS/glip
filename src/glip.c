@@ -159,6 +159,7 @@ int glip_new(struct glip_ctx **ctx, const char* backend_name,
             break;
         }
     }
+    c->backend_id = backend_id;
 
     if (backend_id == -1) {
         err(c, "Unknown backend: %s\n", backend_name);
@@ -206,6 +207,7 @@ int glip_new(struct glip_ctx **ctx, const char* backend_name,
 API_EXPORT
 int glip_free(struct glip_ctx *ctx)
 {
+    glip_backends[ctx->backend_id].free(ctx);
     free(ctx->backend_options);
     free(ctx);
     return 0;

@@ -125,6 +125,16 @@ int gb_tcp_new(struct glip_ctx *ctx)
 }
 
 /**
+ * Destruct the backend
+ *
+ * @see glip_free()
+ */
+void gb_tcp_free(struct glip_ctx *ctx)
+{
+    free(ctx->backend_ctx);
+}
+
+/**
  * Open a target connection
  *
  * @see glip_open()
@@ -255,6 +265,9 @@ int gb_tcp_read(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
+    if (bctx->data_sfd < 0) {
+        return -ENOTCONN;
+    }
     ssize_t rsize = read(bctx->data_sfd, data, size);
     if (rsize == -1) {
         *size_read = 0;
