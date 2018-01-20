@@ -241,7 +241,7 @@ int gb_tcp_logic_reset(struct glip_ctx *ctx)
     uint16_t buf[1];
     buf[0] = CTRL_MSG_LOGIC_RESET;
 
-    ssize_t wsize = write(bctx->ctrl_sfd, buf, sizeof(buf));
+    ssize_t wsize = send(bctx->ctrl_sfd, buf, sizeof(buf), MSG_NOSIGNAL);
     if (wsize == -1 || wsize != sizeof(buf)) {
         err(ctx, "Unable to write data to control channel: %s\n",
             strerror(errno));
@@ -377,15 +377,15 @@ int gb_tcp_write(struct glip_ctx *ctx, uint32_t channel, size_t size,
 
     struct glip_backend_ctx* bctx = ctx->backend_ctx;
 
-    ssize_t wsize = write(bctx->data_sfd, data, size);
+    ssize_t wsize = send(bctx->data_sfd, data, size, MSG_NOSIGNAL);
     if (wsize == -1) {
         *size_written = 0;
         if (errno == EAGAIN) {
             return 0;
-        } else if (errno == EBADF) {
+        } else if (errno == EBADF || errno == EPIPE) {
             return -ENOTCONN;
         } else {
-            dbg(ctx, "TCP write() returned %zd (errno = %d)\n", wsize, errno);
+            dbg(ctx, "TCP send() returned %zd (errno = %d)\n", wsize, errno);
             return -1;
         }
     }
