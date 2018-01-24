@@ -250,3 +250,193 @@ int gl_util_pclose(pid_t pid)
 
     return -1;
 }
+
+
+/**
+ * Backend helper: read from a cbuf
+ *
+ * This function is compatible to the glip_read() function and can be used in
+ * backend implementations using a cbuf for storing incoming data.
+ *
+ * @param[in]  buf the buffer to read from
+ * @param[in]  size how much data is supposed to be read
+ * @param[out] data the read data
+ * @param[out] size_read how much data has been read
+ *
+ * @return 0 if reading was successful
+ * @return any other value indicates failure
+ *
+ * @see glip_read()
+ */
+int gb_util_cbuf_read(struct cbuf *buf, size_t size, uint8_t *data,
+                      size_t *size_read)
+{
+    /* Check the fill level */
+    size_t fill_level = cbuf_fill_level(buf);
+    /* We read as much as possible up to size */
+    size_t size_read_req = min(fill_level, size);
+
+    /* Read from buffer */
+    int rv = cbuf_read(buf, data, size_read_req);
+    if (rv < 0) {
+        return -1;
+    }
+
+    /* Update actual read information */
+    *size_read = size_read_req;
+
+    return 0;
+}
+
+/**
+ * Blocking read from a cbuf
+ *
+ * This function is compatible to the glip_read_b() function and can be used in
+ * backend implementations using a cbuf for storing incoming data.
+ *
+ * @param[in]  buf the buffer to read from
+ * @param[in]  size how much data is supposed to be read
+ * @param[out] data the read data
+ * @param[out] size_read how much data has been read
+ * @param[in]  timeout the maximum duration the read operation can take
+ *
+ * @return 0 if reading was successful
+ * @return -ETIMEDOUT if the read timeout was hit
+ * @return any other value indicates failure
+ *
+ * @see glip_read_b()
+ */
+int gb_util_cbuf_read_b(struct cbuf *buf, size_t size, uint8_t *data,
+                        size_t *size_read, unsigned int timeout)
+{
+    int rv;
+    struct timespec ts;
+
+    if (size > cbuf_size(buf)) {
+        /*
+         * This is not a problem for non-blocking reads, but blocking reads will
+         * block forever in this case as the maximum amount of data ever
+         * available is limited by the buffer size.
+         * @todo: This can be solved by loop-reading until timeout
+         */
+        return -1;
+    }
+
+    /*
+     * Wait until sufficient data is available to be read.
+     */
+    if (timeout != 0) {
+        clock_gettime(CLOCK_REALTIME, &ts);
+        timespec_add_ns(&ts, timeout * 1000 * 1000);
+    }
+
+    size_t level = cbuf_fill_level(buf);
+
+    while (level < size) {
+        if (timeout == 0) {
+            rv = cbuf_wait_for_level_change(buf, level);
+        } else {
+            rv = cbuf_timedwait_for_level_change(buf, level, &ts);
+        }
+
+        if (rv != 0) {
+            break;
+        }
+
+        level = cbuf_fill_level(buf);
+    }
+
+    /*
+     * We read whatever data is available, and assume a timeout if the available
+     * amount of data does not match the requested amount.
+     */
+    *size_read = 0;
+    rv = gb_util_cbuf_read(buf, size, data, size_read);
+    if (rv == 0 && size != *size_read) {
+        return -ETIMEDOUT;
+    }
+    return rv;
+}
+
+
+
+/**
+ * Write to a cbuf
+ *
+ * This function is compatible to the glip_write() function and can be used in
+ * backend implementations using a cbuf for storing outgoing data.
+ *
+ * @param[in]  buf the buffer to read from
+ * @param[in]  size how much data is supposed to be written
+ * @param[in]  data that is supposed to be written
+ * @param[out] size_written how much data has been written
+ *
+ * @return 0 if writing was successful
+ * @return any other value indicates failure
+ *
+ * @see glip_write()
+ */
+int gb_util_cbuf_write(struct cbuf *buf, size_t size, uint8_t *data,
+                       size_t *size_written)
+{
+    unsigned int buf_size_free = cbuf_free_level(buf);
+    *size_written = (size > buf_size_free ? buf_size_free : size);
+
+    return cbuf_write(buf, data, *size_written);
+}
+
+/**
+ * Blocking write to a cbuf
+ *
+ * This function is compatible to the glip_write_b() function and can be used in
+ * backend implementations using a cbuf for storing outgoing data.
+ *
+ * @param[in]  buf the buffer to read from
+ * @param[in]  size how much data is supposed to be written
+ * @param[in]  data that is supposed to be written
+ * @param[out] size_written how much data has been written
+ * @param[in]  timeout the maximum duration the write operation can take
+ *
+ * @return 0 if writing was successful
+ * @return -ETIMEDOUT if the read timeout was hit
+ * @return any other value indicates failure
+ *
+ * @see glip_write_b()
+ */
+int gb_util_cbuf_write_b(struct cbuf *buf, size_t size, uint8_t *data,
+                         size_t *size_written, unsigned int timeout)
+{
+    struct timespec ts;
+
+    if (timeout != 0) {
+        clock_gettime(CLOCK_REALTIME, &ts);
+        timespec_add_ns(&ts, timeout * 1000 * 1000);
+    }
+
+    size_t size_done = 0;
+    while (1) {
+        size_t size_done_tmp = 0;
+        gb_util_cbuf_write(buf, size - size_done, &data[size_done],
+                           &size_done_tmp);
+        size_done += size_done_tmp;
+
+        if (size_done == size) {
+            break;
+        }
+
+        if (cbuf_free_level(buf) == 0) {
+            if (timeout == 0) {
+                cbuf_wait_for_level_change(buf, 0);
+            } else {
+                cbuf_timedwait_for_level_change(buf, 0, &ts);
+            }
+        }
+    }
+
+    *size_written = size_done;
+    if (size != *size_written) {
+        return -ETIMEDOUT;
+    }
+
+    return 0;
+}
