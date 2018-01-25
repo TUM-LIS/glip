@@ -302,6 +302,7 @@ int gb_util_cbuf_read(struct cbuf *buf, size_t size, uint8_t *data,
  *
  * @return 0 if reading was successful
  * @return -ETIMEDOUT if the read timeout was hit
+ * @return -ECANCELED if the blocking operation was cancelled
  * @return any other value indicates failure
  *
  * @see glip_read_b()
@@ -310,7 +311,10 @@ int gb_util_cbuf_read_b(struct cbuf *buf, size_t size, uint8_t *data,
                         size_t *size_read, unsigned int timeout)
 {
     int rv;
+    int retval = 0;
     struct timespec ts;
+
+    *size_read = 0;
 
     if (size > cbuf_size(buf)) {
         /*
@@ -339,8 +343,11 @@ int gb_util_cbuf_read_b(struct cbuf *buf, size_t size, uint8_t *data,
             rv = cbuf_timedwait_for_level_change(buf, level, &ts);
         }
 
-        if (rv != 0) {
-            break;
+        retval = rv;
+        if (rv == -ETIMEDOUT) {
+            goto read_ret;
+        } else if (rv != 0) {
+            goto ret;
         }
 
         level = cbuf_fill_level(buf);
@@ -350,12 +357,14 @@ int gb_util_cbuf_read_b(struct cbuf *buf, size_t size, uint8_t *data,
      * We read whatever data is available, and assume a timeout if the available
      * amount of data does not match the requested amount.
      */
-    *size_read = 0;
+read_ret:
     rv = gb_util_cbuf_read(buf, size, data, size_read);
     if (rv == 0 && size != *size_read) {
-        return -ETIMEDOUT;
+        retval = -ETIMEDOUT;
     }
-    return rv;
+
+ret:
+    return retval;
 }
 
 
@@ -397,8 +406,9 @@ int gb_util_cbuf_write(struct cbuf *buf, size_t size, uint8_t *data,
  * @param[out] size_written how much data has been written
  * @param[in]  timeout the maximum duration the write operation can take
  *
- * @return 0 if writing was successful
- * @return -ETIMEDOUT if the read timeout was hit
+ * @return 0 if all data has been written
+ * @return -ETIMEDOUT if the write timeout was hit
+ * @return -ECANCELED if the blocking operation was cancelled
  * @return any other value indicates failure
  *
  * @see glip_write_b()
@@ -407,6 +417,8 @@ int gb_util_cbuf_write_b(struct cbuf *buf, size_t size, uint8_t *data,
                          size_t *size_written, unsigned int timeout)
 {
     struct timespec ts;
+    int retval;
+    int rv;
 
     if (timeout != 0) {
         clock_gettime(CLOCK_REALTIME, &ts);
@@ -421,22 +433,24 @@ int gb_util_cbuf_write_b(struct cbuf *buf, size_t size, uint8_t *data,
         size_done += size_done_tmp;
 
         if (size_done == size) {
-            break;
+            retval = 0;
+            goto ret;
         }
 
         if (cbuf_free_level(buf) == 0) {
             if (timeout == 0) {
-                cbuf_wait_for_level_change(buf, 0);
+                rv = cbuf_wait_for_level_change(buf, 0);
             } else {
-                cbuf_timedwait_for_level_change(buf, 0, &ts);
+                rv = cbuf_timedwait_for_level_change(buf, 0, &ts);
+            }
+            if (rv != 0) {
+                retval = rv;
+                goto ret;
             }
         }
     }
 
+ret:
     *size_written = size_done;
-    if (size != *size_written) {
-        return -ETIMEDOUT;
-    }
-
-    return 0;
+    return retval;
 }
