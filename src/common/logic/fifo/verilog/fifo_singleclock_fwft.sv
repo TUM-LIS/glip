@@ -28,7 +28,8 @@
  * Author(s):
  *   Philipp Wagner <philipp.wagner@tum.de>
  */
-module fifo_sync_fwft #(
+
+module fifo_singleclock_fwft #(
    parameter WIDTH = 8,
    parameter DEPTH = 32,
    parameter PROG_FULL = (DEPTH / 2)
@@ -54,7 +55,7 @@ module fifo_sync_fwft #(
    wire                      will_update_middle, will_update_dout;
 
    // synchronous FIFO with standard (non-FWFT) read characteristics
-   fifo_sync_standard
+   fifo_singleclock_standard
       #(.WIDTH(WIDTH),
         .DEPTH(DEPTH),
         .PROG_FULL(PROG_FULL))
