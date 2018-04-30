@@ -194,6 +194,7 @@ module glip_cypressfx3_toplevel
    localparam STATE_SW_READ = 14;
    localparam STATE_SW_WRITE = 15;
    localparam STATE_SW_WRITE_WAITFLG = 16;
+   localparam STATE_DELAY_WR = 17;
 
    reg [4:0]   state;
    reg [4:0]   nxt_state;
@@ -250,7 +251,7 @@ module glip_cypressfx3_toplevel
             // If outgoing CDC FIFO contains data and FX3 FIFO on path to host
             // has enough space -> write data to FX3
             if (!fx3_in_full && !int_fifo_out_empty) begin
-               nxt_state = STATE_FLG_A_RCVD;
+               nxt_state = STATE_DELAY_WR;
                // Send zero-length packet after time-out to flush fx3_in_fifo
             end else if (flush) begin
                fifoadr = FX3_EPIN;
@@ -264,6 +265,14 @@ module glip_cypressfx3_toplevel
                // delay of latching, 2 delay of interface, see fig 12)
                nxt_state = STATE_FLG_C_RCVD;
             end
+         end
+
+         // Single wait state to avoid corner case.
+         // Without it, one word would be lost in the case the egress fifo is
+         // emptied while writing to the FX3 and then the fx3_in_almost_full
+         // flag is set to high by the FX3 in the next cycle.
+         STATE_DELAY_WR: begin
+            nxt_state = STATE_FLG_A_RCVD;
          end
 
          STATE_FLG_A_RCVD: begin
