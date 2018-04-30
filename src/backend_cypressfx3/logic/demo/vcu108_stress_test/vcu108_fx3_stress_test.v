@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 by the author(s)
+/* Copyright (c) 2018 by the author(s)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,6 +55,9 @@ module vcu108_fx3_stress_test
    // Stall flag
    input             stall_flag,
    
+   // Error flag
+   input             error_flag,
+
    // Stress test reset switch
    input             rst_sw,
 
@@ -136,6 +139,7 @@ module vcu108_fx3_stress_test
       .fifo_in_data     (fifo_in_data),
       .fifo_in_ready    (fifo_in_ready),
       .stall_flag       (stall_flag),
+      .error_flag       (error_flag),
       .error            (error_led),
       .idle             (idle_led));
 
