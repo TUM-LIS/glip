@@ -16,8 +16,8 @@ module vcu108_stress_test_clock
 
    // Clocking PRIMITIVE
    //------------------------------------
-   wire        clk_out1_clk_wiz_0;
-   wire        clkfbout_clk_wiz_0;
+   wire        pll_clk_out;
+   wire        pll_clk_fb;
 
  
    PLLE3_ADV
@@ -33,13 +33,13 @@ module vcu108_stress_test_clock
       .CLKIN_PERIOD         (3.332))
    plle3_adv_inst(
       // Output clocks
-      .CLKFBOUT            (clkfbout_clk_wiz_0),
-      .CLKOUT0             (clk_out1_clk_wiz_0),
+      .CLKFBOUT            (pll_clk_fb),
+      .CLKOUT0             (pll_clk_out),
       .CLKOUT0B            (),
       .CLKOUT1             (),
       .CLKOUT1B            (),
        // Input clock control
-      .CLKFBIN             (clkfbout_clk_wiz_0),
+      .CLKFBIN             (pll_clk_fb),
       .CLKIN               (clk_in),
       // Ports for dynamic reconfiguration
       .DADDR               (7'h0),
@@ -61,6 +61,6 @@ module vcu108_stress_test_clock
    //-----------------------------------
    BUFG clkout1_buf(
       .O    (clk_out),
-      .I    (clk_out1_clk_wiz_0));
+      .I    (pll_clk_out));
 
 endmodule

@@ -281,7 +281,7 @@ module glip_uart_toplevel
 
    fifo_dualclock_fwft
       #(.WIDTH(8),
-      .DEPTH(8))
+      .DEPTH(16))
    u_ingress_cdc(
       // write side (clk_io)
       .wr_clk           (clk_io),

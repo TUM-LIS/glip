@@ -1,4 +1,4 @@
-/* Copyright (c) 2018 by the author(s)
+/* Copyright (c) 2017-2018 by the author(s)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,10 +71,10 @@ module vcu108_fx3_stress_test
 
    // Clock buffering
    //------------------------------------
-   wire clk_in_clk_wiz_0;
+   wire clk300;
 
    IBUFDS clkin1_ibufds(
-      .O  (clk_in_clk_wiz_0),
+      .O  (clk300),
       .I  (clk_p),
       .IB (clk_n));
 
@@ -82,18 +82,18 @@ module vcu108_fx3_stress_test
    vcu108_stress_test_clock
       #(.FREQ(32'd100_000_000))
    u_clock_100(
-      .rst(),
-      .locked(),
-      .clk_in(clk_in_clk_wiz_0),
+      .rst      (),
+      .locked   (),
+      .clk_in   (clk300),
       .clk_out  (clk100));
 
    // Generate 50MHz clock for the stress test logic to test cross domain clocking
    vcu108_stress_test_clock
       #(.FREQ(32'd50_000_000))
    u_clock_50(
-      .rst(),
-      .locked(),
-      .clk_in(clk_in_clk_wiz_0),
+      .rst      (),
+      .locked   (),
+      .clk_in   (clk300),
       .clk_out  (clk50));
 
 
