@@ -174,8 +174,13 @@ module fifo_dualclock_standard #(
 
    // synchronize read address to write clock domain
    always @(posedge wr_clk) begin
-      rd_addr_gray_wr <= rd_addr_gray;
-      rd_addr_gray_wr_r <= rd_addr_gray_wr;
+      if (wr_rst) begin
+         rd_addr_gray_wr <= 0;
+         rd_addr_gray_wr_r <= 0;
+      end else begin
+         rd_addr_gray_wr <= rd_addr_gray;
+         rd_addr_gray_wr_r <= rd_addr_gray_wr;
+      end
    end
 
    always @(posedge wr_clk)
@@ -198,8 +203,13 @@ module fifo_dualclock_standard #(
 
    // synchronize write address to read clock domain
    always @(posedge rd_clk) begin
-      wr_addr_gray_rd <= wr_addr_gray;
-      wr_addr_gray_rd_r <= wr_addr_gray_rd;
+      if (rd_rst) begin
+         wr_addr_gray_rd <= 0;
+         wr_addr_gray_rd_r <= 0;
+      end else begin
+         wr_addr_gray_rd <= wr_addr_gray;
+         wr_addr_gray_rd_r <= wr_addr_gray_rd;
+      end
    end
 
    always @(posedge rd_clk)
