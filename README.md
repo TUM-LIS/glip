@@ -9,4 +9,4 @@ GLIP encapsulates all low-level details of the data transfers and provides on
 the host side an easy to use C library, and on the target side ready to use
 interfaces (e.g. in Verilog) to quickly setup a working communication.
 
-For more information, see http://glip.io.
+For more information, see https://www.glip.io.
