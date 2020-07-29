@@ -32,7 +32,7 @@ categories of communication exist: control and data communication.
 
 <b>Control communication</b> is done by the following functions:
 
-- glip_reset()
+- glip_logic_reset()
 
 <b>Data communication</b>, i.e. reading and writing data from and to the device,
 is done by these functions:
